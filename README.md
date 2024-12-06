@@ -20,10 +20,9 @@ git add <file>
 git commit -m <message>
 ```
 
-3. mainとの照合を行う．
+3. 作業ブランチとの照合を行う．
 ```
-git switch main
-git pull origin main
+git pull origin <branch>
 ```
 
 4. remote branchにpush
