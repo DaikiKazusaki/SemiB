@@ -5,7 +5,7 @@
 ```
 mkdir <dir>
 ```
-2. cloneする
+2. プロジェクトのcloneをする
 ```
 git clone https://github.com/DaikiKazusaki/SemiB
 ```
