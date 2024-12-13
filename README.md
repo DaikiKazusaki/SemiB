@@ -18,5 +18,6 @@ pip install gymnasium stable-baselines3 "gymnasium[classic_control]" numpy
 ```
 
 ### ファイルの構成
-- Main.py
-- 
+| ファイル名 | 内容 |
+| ---- | ---- |
+| Main.py | オセロの進行を行うファイル |
