@@ -22,7 +22,7 @@ pip install gymnasium stable-baselines3 "gymnasium[classic_control]" numpy
 | ファイル名 | 内容 |
 | ---- | ---- |
 | main.py | オセロの機械学習を行うファイル |
-| ReversiExv | オセロのゲーム進行を行うファイル |
+| ReversiEnv | オセロのゲーム進行を行うファイル |
 
 #### Mainフォルダ
 | ファイル名 | 内容 |
