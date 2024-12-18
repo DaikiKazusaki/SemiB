@@ -34,4 +34,28 @@ class Environment(gym.Env):
     # 行動の実行
     def step(self, action):
         pass
-        
+
+    # 指定された位置に石を置けるかどうか
+    def is_valid_move(self, i, j, k, player):
+        pass
+
+    # 指定された位置に石を置く
+    def place_disc(self, i, j, k, player):
+        pass
+
+    # 石を置いた後の(AIの)相手の処理
+    def opponent_move(self):
+        pass
+
+    # ゲームの終了判定
+    def is_game_over(self):
+        pass
+    
+    # ゲーム終了時に報酬を計算する
+    def compute_final_reward(self):
+        pass
+
+    # ボードの表示
+    def render(self):
+        if self.render_mode == "human":
+            print(self.board)
