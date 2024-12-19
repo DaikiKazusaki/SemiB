@@ -21,11 +21,15 @@ moves = [
 # 描画
 render(moves)
 ```
-1手目
+
+1手目<br/>
 ![1手目の画像](pic/image.png)
-2手目
+
+2手目<br/>
 ![2手目の画像](pic/image-1.png)
-3手目
+
+3手目<br/>
 ![3手目の画像](pic/image-2.png)
-4手目
+
+4手目<br/>
 ![4手目の画像](pic/image-3.png)
