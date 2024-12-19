@@ -5,10 +5,10 @@ import socketserver
 
 PORT = 8000
 
+# 全ての手をアニメーションで表示する
 def render(moves):
     with tempfile.TemporaryDirectory() as dname:
         _create_page(dname, moves)
-        print(dname)
         # リクエストハンドラ
         class _Handler(http.server.SimpleHTTPRequestHandler):
             def translate_path(self, path):
@@ -18,6 +18,7 @@ def render(moves):
             print(f'Please Access localhost:{PORT}.')
             httpd.serve_forever()
 
+# ブラウザに表示するためのhtml,jsファイルを生成する
 def _create_page(dname, moves):
     if (not os.path.exists(dname)):
         raise FileNotFoundError(dname)
