@@ -217,13 +217,9 @@ App.animate = function() {{
 ##### 以下は開発用に書いているだけで、本来は使用しない
 if __name__ == "__main__":
     sample_move = [
-        [0, 0],
         [0, 1],
-        [0, 3],
-        [1, 3],
-        [2, 1],
         [3, 2],
         [1, 3],
-        [3, 2],
+        [2, 0]
     ]
-    render(sample_move)
+    render(sample_move, interval=20000)

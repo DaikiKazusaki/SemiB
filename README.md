@@ -24,10 +24,11 @@ pip install gymnasium stable-baselines3 "gymnasium[classic_control]" numpy
 | main.py | オセロの機械学習を行うファイル |
 | ReversiEnv.py | オセロのゲーム進行を行うファイル |
 
-#### sampleフォルダ
+#### Docフォルダ
 | ファイル名 | 内容 |
 | ---- | ---- |
 | 3d-tic-tac-toe.html | 立体4目並べをプレイできるファイル |
+| board_rendererについて.md | renderer.pyの説明を書いてるファイル |
 
 #### Mainフォルダ
 | ファイル名 | 内容 |
