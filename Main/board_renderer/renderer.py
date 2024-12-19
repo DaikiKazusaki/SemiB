@@ -6,9 +6,11 @@ import socketserver
 PORT = 8000
 
 # 全ての手をアニメーションで表示する
-def render(moves, browse=False):
+def render(moves, browse=True):
     if not browse:
-        _create_page('.', moves)
+        RESULT_DIR = 'result'
+        os.makedirs(RESULT_DIR, exist_ok=True)
+        _create_page(RESULT_DIR, moves)
     else:
         with tempfile.TemporaryDirectory() as dname:
             _create_page(dname, moves)
