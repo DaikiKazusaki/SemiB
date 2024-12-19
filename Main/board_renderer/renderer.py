@@ -6,6 +6,10 @@ import socketserver
 PORT = 8000
 
 # 全ての手をアニメーションで表示する
+#   moves: スタートからゲームオーバーまでの全手を二次元のリスト形式で持つ(縦・横で、高さは持たない)
+#           eg. [[0, 0], [0, 1], [1, 0], ...]
+#   interval: アニメーションの切り替わり間隔(msec)
+#   browse: ローカルホストを立ち上げてブラウザで閲覧するかどうか
 def render(moves, interval=1000, browse=True):
     if not browse:
         RESULT_DIR = 'result'
