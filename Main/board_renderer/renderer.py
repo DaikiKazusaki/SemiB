@@ -2,6 +2,9 @@ import tempfile
 import os
 import http.server
 import socketserver
+import threading
+import time
+import webbrowser
 
 PORT = 8000
 
@@ -23,10 +26,23 @@ def render(moves, interval=1000, browse=True):
                 def translate_path(self, path):
                     path = super().translate_path(path)
                     return os.path.join(dname, os.path.relpath(path, start=os.getcwd()))
-            with socketserver.TCPServer(("", PORT), _Handler) as httpd:
-                print(f'Please Access localhost:{PORT}.')
-                httpd.serve_forever()
-                print('test')
+            # サーバーを開始する関数
+            def start_server():
+                with socketserver.TCPServer(("", PORT), _Handler) as httpd:
+                    print(f'Please Access localhost:{PORT}.')
+                    httpd.serve_forever()
+            # サーバーをバックグラウンド実行
+            def run_server_background():
+                thread = threading.Thread(target=start_server)
+                thread.daemon = True            # メインプログラム終了とともに終了
+                thread.start()
+            # ブラウザ表示
+            def open_in_browser():
+                time.sleep(1)                   # サーバー起動まで待機
+                webbrowser.open(f'http://localhost:{PORT}')
+            run_server_background()
+            open_in_browser()
+            input('Press Enter to quit...')     # サーバーを終了させないために
 
 # ブラウザに表示するためのhtml,jsファイルを生成する
 def _create_page(dname, moves, interval):
