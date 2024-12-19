@@ -6,14 +6,14 @@ import socketserver
 PORT = 8000
 
 # 全ての手をアニメーションで表示する
-def render(moves, browse=True):
+def render(moves, interval=1000, browse=True):
     if not browse:
         RESULT_DIR = 'result'
         os.makedirs(RESULT_DIR, exist_ok=True)
-        _create_page(RESULT_DIR, moves)
+        _create_page(RESULT_DIR, moves, interval)
     else:
         with tempfile.TemporaryDirectory() as dname:
-            _create_page(dname, moves)
+            _create_page(dname, moves, interval)
             # リクエストハンドラ
             class _Handler(http.server.SimpleHTTPRequestHandler):
                 def translate_path(self, path):
@@ -25,7 +25,7 @@ def render(moves, browse=True):
                 print('test')
 
 # ブラウザに表示するためのhtml,jsファイルを生成する
-def _create_page(dname, moves):
+def _create_page(dname, moves, interval):
     if (not os.path.exists(dname)):
         raise FileNotFoundError(dname)
     INDEX_FILE = 'index.html'
@@ -60,11 +60,17 @@ f"""\
 """
         )
     # script.jsの作成
+    move_len = len(moves)
     with open(js_path, mode='w', encoding='utf-8') as f:
         f.write(
 f"""\
 import * as THREE from 'three';
 import {{ OrbitControls }} from 'three/addons/controls/OrbitControls.js';
+
+let i = 0;
+const move_len = {move_len};
+const moves = {str(moves)};
+const interval = {interval};
 
 window.onload = event => {{
     // 初期化
@@ -146,13 +152,44 @@ App.init = function() {{
 
 // 表示の更新
 App.animate = function() {{
-    requestAnimationFrame(App.animate);
+    if (i >= move_len) {{ return; }}
+    // 次の手を指す
+    const [ nextX, nextZ ] = moves[i];
+    const targetRod = App.rods.filter(function(rod) {{
+        const {{ x, z }} = rod.userData;
+        return nextX == x && nextZ == z;
+    }})[0];
+
+    const sphereRadius = 0.55;
+    const whiteMaterial = new THREE.MeshPhongMaterial({{ color: 0xffffff }});
+    const blackMaterial = new THREE.MeshPhongMaterial({{ color: 0x000000 }});
+    const sphereGeometry = new THREE.SphereGeometry(sphereRadius, 16, 16);
+    const material = App.turnCount % 2 === 0 ? blackMaterial : whiteMaterial;
+    const sphere = new THREE.Mesh(sphereGeometry, material);
+    sphere.position.set(
+        targetRod.position.x,
+        -1.5 + targetRod.userData.spheres, // 縦に積む
+        targetRod.position.z
+    );
+    App.scene.add(sphere);
+
+    // 盤面情報を更新
+    App.board[nextX][targetRod.userData.spheres][nextZ] =
+        App.turnCount % 2 === 0 ? 1 : -1;
+    
+    targetRod.userData.spheres++;
+    App.turnCount++;
+
+    // interval後にまた描画
+    window.setTimeout(App.animate, interval);
 
     // カメラ操作を反映
     App.controls.update();
 
     // 再描画
     App.renderer.render(App.scene, App.camera);
+
+    i++;
 }};
 """
         )
@@ -160,9 +197,13 @@ App.animate = function() {{
 ##### 以下は開発用に書いているだけで、本来は使用しない
 if __name__ == "__main__":
     sample_move = [
-        [0, 0, 0],
-        [0, 0, 1],
-        [0, 0, 2],
-        [0, 0, 3]
+        [0, 0],
+        [0, 1],
+        [0, 3],
+        [1, 3],
+        [2, 1],
+        [3, 2],
+        [1, 3],
+        [3, 2],
     ]
     render(sample_move)
