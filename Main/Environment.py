@@ -103,19 +103,10 @@ class Environment(gym.Env):
         return False        
 
     # 指定された位置に石を置く
+    # 立体四目並べでは石を反転する必要がないため，石を置くだけでよい
     ## i: x座標, j: y座標, k: z座標, player: 石の色(黒=1, 白=-1)
     def place_disc(self, i, j, k, player):
-        self.board[i, j, k] = player
-        directions = [
-            (di, dj, dk)
-            for di in [-1, 0, 1]
-            for dj in [-1, 0, 1]
-            for dk in [-1, 0, 1]
-            if not (di == 0 and dj == 0 and dk == 0)
-        ]
-        opponent = -player
-        
-
+        self.board[i, j, k] = player      
 
     ## 以下順也の担当
     # 石を置いた後の(AIの)相手の処理
