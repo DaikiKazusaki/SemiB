@@ -34,6 +34,7 @@ class Environment(gym.Env):
         return observation, info
     
     # 行動の実行
+    ## どこに置いたかの座標を戻り値にする
     def step(self, action):
         # actionは0~63の整数, これをボード上の(i,j,k)にマッピング
         i = action // (self.board_size * self.board_size)
@@ -65,17 +66,35 @@ class Environment(gym.Env):
         else:
             reward = 0.0
 
+        info = {}
+        return self.board.copy(), reward, terminated, False, info
 
     # 指定された位置に石を置けるかどうか
     ## i: x座標, j: y座標, k: z座標, player: 石の色(黒=1, 白=-1)
     def is_valid_move(self, i, j, k, player):
-        pass
+        # ボード外、既に埋まっているマスは×
+        if i < 0 or i >= self.board_size or j < 0 or j >= self.board_size or k < 0 or k >= self.board_size:
+            return False
+        if self.board[i, j, k] != 0:
+            return False
+        
+        # 置けるマスかの判定
+        board = self.board.copy()
+        for x, y, z in range(self.board_size):
+            if board[x, y, z] == 0:
+                board[x, y, z] = player
+                if self.check_win(board, player):
+                    return True
+                board[x, y, z] = 0
+        
 
     # 指定された位置に石を置く
     ## i: x座標, j: y座標, k: z座標, player: 石の色(黒=1, 白=-1)
     def place_disc(self, i, j, k, player):
         pass
 
+
+    ## 以下順也の担当
     # 石を置いた後の(AIの)相手の処理
     def opponent_move(self):
         pass
