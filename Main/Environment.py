@@ -49,16 +49,22 @@ class Environment(gym.Env):
 
     # 石を置いた後の(AIの)相手の処理
     def opponent_move(self):
+        
         pass
 
     # ゲームの終了判定
     ## return: True=ゲーム継続, False=ゲーム終了
     def is_game_over(self):
-        pass
+        ##双方打てる部分がない
+        if np.all(self.board != 0):
+            return True
+        #pass
     
     # ゲーム終了時に報酬を計算する
     def compute_final_reward(self):
-        pass
+        ##ゲーム終了時最後の手番の人が勝利する
+        ##黒が1白が-1
+        return float(self.current_player)
 
     # ボードの表示
     def render(self):
