@@ -78,15 +78,29 @@ class Environment(gym.Env):
         if self.board[i, j, k] != 0:
             return False
         
-        # 置けるマスかの判定
-        board = self.board.copy()
-        for x, y, z in range(self.board_size):
-            if board[x, y, z] == 0:
-                board[x, y, z] = player
-                if self.check_win(board, player):
+        # ひっくり返せる石があるか確認
+        directions = [
+            (di, dj, dk)
+            for di in [-1, 0, 1]
+            for dj in [-1, 0, 1]
+            for dk in [-1, 0, 1]
+            if not (di == 0 and dj == 0 and dk == 0)
+        ]
+        opponent = -player
+        for di, dj, dk in directions:
+            x, y, z = i + di, j + dj, k + dk
+            found_opponent = False
+            while 0 <= x < self.board_size and 0 <= y < self.board_size and 0 <= z < self.board_size:
+                if self.board[x, y, z] == opponent:
+                    found_opponent = True
+                    x += di
+                    y += dj
+                    z += dk
+                elif self.board[x, y, z] == player and found_opponent:
                     return True
-                board[x, y, z] = 0
-        
+                else:
+                    break
+        return False        
 
     # 指定された位置に石を置く
     ## i: x座標, j: y座標, k: z座標, player: 石の色(黒=1, 白=-1)
