@@ -130,15 +130,31 @@ App.init = function() {
 
                 // 盤面情報を更新
                 App.board[x][intersectedRod.userData.spheres][z] =
-                    App.isMyTurn() === 0 ? 1 : -1;
+                    App.isMyTurn() ? 1 : -1;
 
                 intersectedRod.userData.spheres++;
                 App.turnCount++;
                 App.clickLog.push(`棒(${x}, ${z})`);
 
+                // ここから敵の動き
+                fetch('/move', {
+                    method: "POST",
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify([x, z])
+                    }
+                )
+                .then(response => response.json())
+                .then(data => {
+                    // TODO: ここで相手の手を盤面に描画、勝敗がついたならそれっぽい画面に飛ばすかテキストを表示させる
+                    console.log(data)
+                })
+                .catch(error => console.error('Error: ', error));
+
                 // 現在の盤面を表示
-                console.log(document.getElementById("output").textContent =
-                `盤面:\n${formatBoard(App.board)}\n\nクリック履歴: ${App.clickLog.join(", ")}`);
+                //console.log(document.getElementById("output").textContent =
+                //`盤面:\n${formatBoard(App.board)}\n\nクリック履歴: ${App.clickLog.join(", ")}`);
             }
         }
     }
