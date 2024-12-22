@@ -115,21 +115,22 @@ App.init = function() {
         if (intersects.length > 0) {
             const intersectedRod = intersects[0].object;
             const { x, z } = intersectedRod.userData;
+            const y = intersectedRod.userData.spheres;
 
             // 棒に球体を追加（最大4つまで）
-            if (intersectedRod.userData.spheres < 4) {
+            if (y < 4) {
                 const sphereGeometry = new THREE.SphereGeometry(sphereRadius, 16, 16);
                 const material = App.isMyTurn() ? blackMaterial : whiteMaterial;
                 const sphere = new THREE.Mesh(sphereGeometry, material);
                 sphere.position.set(
                     intersectedRod.position.x,
-                    -1.5 + intersectedRod.userData.spheres, // 縦に積む
+                    -1.5 + y,                   // 縦に積む
                     intersectedRod.position.z
                 );
                 App.scene.add(sphere);
 
                 // 盤面情報を更新
-                App.board[x][intersectedRod.userData.spheres][z] =
+                App.board[x][y][z] =
                     App.isMyTurn() ? 1 : -1;
 
                 intersectedRod.userData.spheres++;
@@ -142,12 +143,13 @@ App.init = function() {
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify([x, z])
+                    body: JSON.stringify([x, z, y])     // 注意!!js内ではy方向が縦になっているが、python内ではz方向が縦にする
                     }
                 )
                 .then(response => response.json())
                 .then(data => {
                     // TODO: ここで相手の手を盤面に描画、勝敗がついたならそれっぽい画面に飛ばすかテキストを表示させる
+                    // python内ではz方向が縦であるが、js内ではy方向が縦であるので、適切な変換が必要
                     console.log(data)
                 })
                 .catch(error => console.error('Error: ', error));
