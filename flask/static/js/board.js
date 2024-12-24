@@ -1,5 +1,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { TextGeometry } from 'three/addons/geometries/TextGeometry.js';
+import { FontLoader } from 'three/addons/loaders/FontLoader.js';
 
 window.onload = event => {
     // 初期化
@@ -72,6 +74,60 @@ App.init = function() {
             App.rods.push(rod);
         }
     }
+
+    // X軸, Y軸, Z軸の描画
+    const axisMaterial = new THREE.LineBasicMaterial({ color: 0x000000 });
+    const xPoints = [];
+    xPoints.push( new THREE.Vector3(-7, -3, -7) );
+    xPoints.push( new THREE.Vector3(7, -3, -7) );
+    const xGeometry = new THREE.BufferGeometry().setFromPoints(xPoints);
+    const xLine = new THREE.Line(xGeometry, axisMaterial);
+    App.scene.add(xLine);
+    const yPoints = [];
+    yPoints.push( new THREE.Vector3(-7, -3, -7) );
+    yPoints.push( new THREE.Vector3(-7, 7, -7) );
+    const yGeometry = new THREE.BufferGeometry().setFromPoints(yPoints);
+    const yLine = new THREE.Line(yGeometry, axisMaterial);
+    App.scene.add(yLine);
+    const zPoints = [];
+    zPoints.push( new THREE.Vector3(-7, -3, -7) );
+    zPoints.push( new THREE.Vector3(-7, -3, 7) );
+    const zGeometry = new THREE.BufferGeometry().setFromPoints(zPoints);
+    const zLine = new THREE.Line(zGeometry, axisMaterial);
+    App.scene.add(zLine);
+    // X, Y, Zの文字
+    const loader = new FontLoader();
+    const labelMaterial = new THREE.MeshNormalMaterial();
+
+    loader.load('fonts/Roboto_Regular.json', function ( font ) {
+        const xLabelGeometry = new TextGeometry( 'X', {
+            font: font,
+            size: 1,
+            depth: 0.25,
+        } );
+        xLabelGeometry.center();
+        const xLabel = new THREE.Mesh(xLabelGeometry, labelMaterial);
+        xLabel.position.set(8, -3, -7);
+        App.scene.add(xLabel);
+        const yLabelGeometry = new TextGeometry( 'Y', {
+            font: font,
+            size: 1,
+            depth: 0.25,
+        } );
+        yLabelGeometry.center();
+        const yLabel = new THREE.Mesh(yLabelGeometry, labelMaterial);
+        yLabel.position.set(-7, 8, -7);
+        App.scene.add(yLabel);
+        const zLabelGeometry = new TextGeometry( 'Z', {
+            font: font,
+            size: 1,
+            depth: 0.25,
+        } );
+        zLabelGeometry.center();
+        const zLabel = new THREE.Mesh(zLabelGeometry, labelMaterial);
+        zLabel.position.set(-7, -3, 8);
+        App.scene.add(zLabel);
+    } );
 
     // 照明を追加（明るく設定）
     const ambientLight = new THREE.AmbientLight(0xaaaaaa, 1); // 環境光
@@ -162,13 +218,13 @@ App.init = function() {
                         const sphere = new THREE.Mesh(sphereGeometry, material);
                         sphere.position.set(
                             opponentRod.position.x,
-                            -1.5 + y,                   // 縦に積む
+                            -1.5 + opponentY,    // 縦に積む
                             opponentRod.position.z
                         );
                         App.scene.add(sphere);
 
                         // 盤面情報を更新
-                        App.board[x][y][z] =
+                        App.board[x][opponentY][z] =
                             App.isMyTurn() ? 1 : -1;
 
                         opponentRod.userData.spheres++;

@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, jsonify
+from flask import Flask, render_template, request, redirect, url_for, jsonify, send_from_directory
 from lib.Environment import SampleEnv, BOARD_SIZE   # TODO: 本実装では Environment
 
 app = Flask(__name__)
@@ -36,3 +36,8 @@ def move():
             })
     else:
         return redirect(url_for('board'))   # 「"/move"」に直接アクセスされた時は「"/"」 に飛ばす
+
+# フォント置いてる場所を返すだけ
+@app.route('/fonts/<path:font>')
+def send_font(font):
+    return send_from_directory('static', 'fonts/' + font)
