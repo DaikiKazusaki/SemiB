@@ -150,7 +150,36 @@ App.init = function() {
                 .then(data => {
                     // TODO: ここで相手の手を盤面に描画、勝敗がついたならそれっぽい画面に飛ばすかテキストを表示させる
                     // python内ではz方向が縦であるが、js内ではy方向が縦であるので、適切な変換が必要
-                    console.log(data)
+                    if ('opponent' in data) {
+                        console.log(data);
+                        const [ opponentX, opponentZ, opponentY ] = data['opponent'];
+                        const opponentRod = App.rods.find(function (rod) {
+                            const { x, z } = rod.userData;
+                            return x == opponentX && z == opponentZ;
+                        });
+                        const sphereGeometry = new THREE.SphereGeometry(sphereRadius, 16, 16);
+                        const material = App.isMyTurn() ? blackMaterial : whiteMaterial;
+                        const sphere = new THREE.Mesh(sphereGeometry, material);
+                        sphere.position.set(
+                            opponentRod.position.x,
+                            -1.5 + y,                   // 縦に積む
+                            opponentRod.position.z
+                        );
+                        App.scene.add(sphere);
+
+                        // 盤面情報を更新
+                        App.board[x][y][z] =
+                            App.isMyTurn() ? 1 : -1;
+
+                        opponentRod.userData.spheres++;
+                        App.turnCount++;
+                    }
+                    if (data['winner'] == 1) {
+                        console.log('player win!!');
+                    }
+                    else if (data['winner'] == -1) {
+                        console.log('player lose...');
+                    }
                 })
                 .catch(error => console.error('Error: ', error));
 
@@ -161,11 +190,6 @@ App.init = function() {
         }
     }
     
-    // 盤面情報を整形して表示する関数
-    function formatBoard(board) {
-        return board.map(layer => layer.map(row => row.join(", ")).join("\n")).join("\n\n");
-    }
-
     // イベントリスナーの登録
     canvas.addEventListener('mousemove', onMouseMove);
     canvas.addEventListener('click', onMouseClick);

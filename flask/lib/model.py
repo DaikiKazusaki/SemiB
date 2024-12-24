@@ -14,7 +14,7 @@ class SampleModel():
             for y in range(_BOARD_SIZE):
                 placeable_z = 0
                 for z in range(_BOARD_SIZE):
-                    if board[x][y][z] == 0: # おける場所なら
+                    if board[x, y, z] == 0: # おける場所なら
                         break
                     placeable_z += 1
                 if placeable_z == _BOARD_SIZE:
