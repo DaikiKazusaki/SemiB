@@ -154,6 +154,14 @@ App.init = function() {
     const raycaster = new THREE.Raycaster();
     const mouse = new THREE.Vector2();
     const updateBoardWithLog = function(x, y, z) {
+        let isMyTurn = App.isMyTurn();
+        App.board[x][y][z] = isMyTurn ? 1 : -1;       // 盤面配列に配置
+        let log = isMyTurn ?
+        `you: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(${x}, ${y}, ${z})` :   // TODO: めんどいからtableにしてないけど、tableにすべき
+        `opponent: (${x}, ${y}, ${z})`;
+        App.clickLog.push(log);
+        const logContentElement = document.getElementById('log-content');
+        logContentElement.innerHTML = App.clickLog.join('<br>\n');
     };
     const placeIfPossible = function(x, z) {
         if (App.isGameOver || !App.isMyTurn()) { return; }  // ゲームオーバーか、自分のターンでない場合は抜ける
@@ -177,12 +185,10 @@ App.init = function() {
                 App.scene.add(sphere);
 
                 // 盤面情報を更新
-                App.board[x][y][z] =
-                    App.isMyTurn() ? 1 : -1;
+                updateBoardWithLog(x, y, z);
 
                 rod.userData.spheres++;
                 App.turnCount++;
-                App.clickLog.push(`棒(${x}, ${z})`);
 
                 // ここから敵の動き
                 fetch('/move', {
@@ -214,8 +220,7 @@ App.init = function() {
                         App.scene.add(sphere);
 
                         // 盤面情報を更新
-                        App.board[x][opponentY][z] =
-                            App.isMyTurn() ? 1 : -1;
+                        updateBoardWithLog(opponentX, opponentY, opponentZ);
 
                         opponentRod.userData.spheres++;
                         App.turnCount++;
