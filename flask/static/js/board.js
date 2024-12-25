@@ -19,6 +19,7 @@ const App = {
     board: [],        // 現在の盤面 (4×4×4形式)
     clickLog: [],     // クリックした棒の記録
     turnCount: 0,     // ターン数（奇数・偶数を判定）
+    isGameOver: false,// ゲームが終わったか
 };
 
 App.isMyTurn = function() {
@@ -142,6 +143,7 @@ App.init = function() {
     const mouse = new THREE.Vector2();
 
     function onMouseMove(event) {
+        if (App.isGameOver || !App.isMyTurn()) { return; }  // ゲームオーバーしているか、自分のターンでない場合は処理しない
         // マウス位置を計算
         mouse.x = (event.clientX / canvas.width) * 2 - 1;
         mouse.y = -(event.clientY / canvas.height) * 2 + 1;
@@ -160,6 +162,7 @@ App.init = function() {
     }
 
     function onMouseClick(event) {
+        if (App.isGameOver || !App.isMyTurn()) { return; }  // ゲームオーバーしているか、自分のターンでない場合は処理しない
         // マウス位置を計算
         mouse.x = (event.clientX / canvas.width) * 2 - 1;
         mouse.y = -(event.clientY / canvas.height) * 2 + 1;
@@ -207,7 +210,6 @@ App.init = function() {
                     // TODO: ここで相手の手を盤面に描画、勝敗がついたならそれっぽい画面に飛ばすかテキストを表示させる
                     // python内ではz方向が縦であるが、js内ではy方向が縦であるので、適切な変換が必要
                     if ('opponent' in data) {
-                        console.log(data);
                         const [ opponentX, opponentZ, opponentY ] = data['opponent'];
                         const opponentRod = App.rods.find(function (rod) {
                             const { x, z } = rod.userData;
@@ -230,21 +232,44 @@ App.init = function() {
                         opponentRod.userData.spheres++;
                         App.turnCount++;
                     }
-                    if (data['winner'] == 1) {
-                        console.log('player win!!');
-                    }
-                    else if (data['winner'] == -1) {
-                        console.log('player lose...');
+                    if (data['winner'] != 0) {
+                        App.isGameOver = true;
+                        let message = '';
+                        if (data['winner'] == 1) {
+                            message = 'player win!!';
+                        }
+                        else {
+                            message = 'player lose...';
+                        }
+                        // htmlに書き込む
+                        document.getElementById('result').textContent = message;
                     }
                 })
                 .catch(error => console.error('Error: ', error));
-
-                // 現在の盤面を表示
-                //console.log(document.getElementById("output").textContent =
-                //`盤面:\n${formatBoard(App.board)}\n\nクリック履歴: ${App.clickLog.join(", ")}`);
             }
         }
     }
+
+    // ボタンのホバー設定
+    const rodButtons = document.getElementsByTagName('custom-rod-button');
+    let rodButtonArray = [...rodButtons];    // foreachをするために配列に変換する必要があるらしい
+    rodButtonArray.forEach(rodButton => {
+        const x = parseInt(rodButton.getAttribute('x'));
+        const z = parseInt(rodButton.getAttribute('z'));
+        if (isNaN(x) || isNaN(z)) { return; }   // 数値に変換できない場合はここで抜ける
+        rodButton.addEventListener('mouseover', function() {
+            App.rods.forEach(rod => rod.material = rodMaterialDefault);
+            App.rods.filter(function(value) {
+                 return value.userData.x == x && value.userData.z == z
+            }).forEach(rod => rod.material = rodMaterialHighlight);     // ホバーした座標の棒をハイライト
+        });
+        rodButton.addEventListener('mouseleave', function() {
+            App.rods.forEach(rod => rod.material = rodMaterialDefault);
+        });
+        rodButton.addEventListener('click', function() {
+            console.log('clicked');
+        });
+    });
     
     // イベントリスナーの登録
     canvas.addEventListener('mousemove', onMouseMove);
