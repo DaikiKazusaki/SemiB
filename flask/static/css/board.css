@@ -3,3 +3,8 @@
 #board {
     border: 1px solid black;
 }
+
+.about_board {
+    display: flex;
+    align-items: center;
+}

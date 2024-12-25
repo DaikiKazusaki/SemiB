@@ -31,7 +31,7 @@ App.init = function() {
 
     // カメラの設定
     App.camera = new THREE.PerspectiveCamera(75, canvas.width / canvas.height, 1, 10000);
-    App.camera.position.set(7, 7, 15);
+    App.camera.position.set(7, 7, 10);
     App.scene = new THREE.Scene();
 
     // 背景色の設定
@@ -58,6 +58,18 @@ App.init = function() {
     const sphereRadius = 0.55;
     const whiteMaterial = new THREE.MeshPhongMaterial({ color: 0xffffff });
     const blackMaterial = new THREE.MeshPhongMaterial({ color: 0x000000 });
+    const setRodsDefaultColor = function() {
+        App.rods.forEach(rod => rod.material = rodMaterialDefault);
+    };
+    const setRodHighLight = function(x, z) {
+        setRodsDefaultColor();  // 一旦デフォルト色
+        App.rods.filter(
+            function(rod) {
+                return rod.userData.x == x && rod.userData.z == z;
+            }
+        ).forEach(selectedRod => selectedRod.material = rodMaterialHighlight);
+    };
+
 
     App.board = Array.from({ length: gridSize }, () =>
         Array.from({ length: gridSize }, () => Array(gridSize).fill(0))
@@ -141,50 +153,26 @@ App.init = function() {
     // マウスイベントの設定
     const raycaster = new THREE.Raycaster();
     const mouse = new THREE.Vector2();
-
-    function onMouseMove(event) {
-        if (App.isGameOver || !App.isMyTurn()) { return; }  // ゲームオーバーしているか、自分のターンでない場合は処理しない
-        // マウス位置を計算
-        mouse.x = (event.clientX / canvas.width) * 2 - 1;
-        mouse.y = -(event.clientY / canvas.height) * 2 + 1;
-
-        // レイキャスト
-        raycaster.setFromCamera(mouse, App.camera);
-        const intersects = raycaster.intersectObjects(App.rods);
-
-        // 棒の色をリセット
-        App.rods.forEach(rod => rod.material = rodMaterialDefault);
-
-        if (intersects.length > 0) {
-            const intersectedRod = intersects[0].object;
-            intersectedRod.material = rodMaterialHighlight; // 選択中の棒をハイライト
-        }
-    }
-
-    function onMouseClick(event) {
-        if (App.isGameOver || !App.isMyTurn()) { return; }  // ゲームオーバーしているか、自分のターンでない場合は処理しない
-        // マウス位置を計算
-        mouse.x = (event.clientX / canvas.width) * 2 - 1;
-        mouse.y = -(event.clientY / canvas.height) * 2 + 1;
-
-        // レイキャスト
-        raycaster.setFromCamera(mouse, App.camera);
-        const intersects = raycaster.intersectObjects(App.rods);
-
-        if (intersects.length > 0) {
-            const intersectedRod = intersects[0].object;
-            const { x, z } = intersectedRod.userData;
-            const y = intersectedRod.userData.spheres;
-
-            // 棒に球体を追加（最大4つまで）
-            if (y < 4) {
+    const updateBoardWithLog = function(x, y, z) {
+    };
+    const placeIfPossible = function(x, z) {
+        if (App.isGameOver || !App.isMyTurn()) { return; }  // ゲームオーバーか、自分のターンでない場合は抜ける
+        const rods = App.rods.filter(
+            function(rod) {
+                return rod.userData.x == x && rod.userData.z == z;
+            }
+        );
+        if (rods.length > 0) {      // 対応する棒が存在する場合
+            const rod = rods[0];
+            const y = rod.userData.spheres;
+            if (y < 4) {            // まだ置けるなら
                 const sphereGeometry = new THREE.SphereGeometry(sphereRadius, 16, 16);
                 const material = App.isMyTurn() ? blackMaterial : whiteMaterial;
                 const sphere = new THREE.Mesh(sphereGeometry, material);
                 sphere.position.set(
-                    intersectedRod.position.x,
+                    rod.position.x,
                     -1.5 + y,                   // 縦に積む
-                    intersectedRod.position.z
+                    rod.position.z
                 );
                 App.scene.add(sphere);
 
@@ -192,7 +180,7 @@ App.init = function() {
                 App.board[x][y][z] =
                     App.isMyTurn() ? 1 : -1;
 
-                intersectedRod.userData.spheres++;
+                rod.userData.spheres++;
                 App.turnCount++;
                 App.clickLog.push(`棒(${x}, ${z})`);
 
@@ -248,6 +236,38 @@ App.init = function() {
                 .catch(error => console.error('Error: ', error));
             }
         }
+    };
+
+    function onMouseMove(event) {
+        // マウス位置を計算
+        mouse.x = (event.clientX / canvas.width) * 2 - 1;
+        mouse.y = -(event.clientY / canvas.height) * 2 + 1;
+
+        // レイキャスト
+        raycaster.setFromCamera(mouse, App.camera);
+        const intersects = raycaster.intersectObjects(App.rods);
+
+        // 選択された棒をハイライト
+        if (intersects.length > 0) {
+            const { x, z } = intersects[0].object.userData;
+            setRodHighLight(x, z);
+        }
+    }
+
+    function onMouseClick(event) {
+        // マウス位置を計算
+        mouse.x = (event.clientX / canvas.width) * 2 - 1;
+        mouse.y = -(event.clientY / canvas.height) * 2 + 1;
+
+        // レイキャスト
+        raycaster.setFromCamera(mouse, App.camera);
+        const intersects = raycaster.intersectObjects(App.rods);
+
+        if (intersects.length > 0) {
+            const intersectedRod = intersects[0].object;
+            const { x, z } = intersectedRod.userData;
+            placeIfPossible(x, z);
+        }
     }
 
     // ボタンのホバー設定
@@ -264,10 +284,10 @@ App.init = function() {
             }).forEach(rod => rod.material = rodMaterialHighlight);     // ホバーした座標の棒をハイライト
         });
         rodButton.addEventListener('mouseleave', function() {
-            App.rods.forEach(rod => rod.material = rodMaterialDefault);
+            setRodsDefaultColor();
         });
         rodButton.addEventListener('click', function() {
-            console.log('clicked');
+            placeIfPossible(x, z);
         });
     });
     

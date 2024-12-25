@@ -19,36 +19,41 @@
         <h1>立体4目並べ 対戦</h1>
         <div class="main">
             <div class="about_board">
-                <canvas id="board" width="600" height="600"></canvas>
-                <div class="rod_buttons">
-                    <div class="caption">ボタン一覧</div>
-                    <div class="x_0">
-                        <custom-rod-button x="0" z="0"></custom-rod-button>
-                        <custom-rod-button x="0" z="1"></custom-rod-button>
-                        <custom-rod-button x="0" z="2"></custom-rod-button>
-                        <custom-rod-button x="0" z="3"></custom-rod-button>
-                    </div>
-                    <div class="x_1">
-                        <custom-rod-button x="1" z="0"></custom-rod-button>
-                        <custom-rod-button x="1" z="1"></custom-rod-button>
-                        <custom-rod-button x="1" z="2"></custom-rod-button>
-                        <custom-rod-button x="1" z="3"></custom-rod-button>
-                    </div>
-                    <div class="x_2">
-                        <custom-rod-button x="2" z="0"></custom-rod-button>
-                        <custom-rod-button x="2" z="1"></custom-rod-button>
-                        <custom-rod-button x="2" z="2"></custom-rod-button>
-                        <custom-rod-button x="2" z="3"></custom-rod-button>
-                    </div>
-                    <div class="x_3">
-                        <custom-rod-button x="3" z="0"></custom-rod-button>
-                        <custom-rod-button x="3" z="1"></custom-rod-button>
-                        <custom-rod-button x="3" z="2"></custom-rod-button>
-                        <custom-rod-button x="3" z="3"></custom-rod-button>
+                <div class="board_and_button">
+                    <canvas id="board" width="500" height="500"></canvas>
+                    <div id="rod_buttons">
+                        <div class="caption">ボタン一覧</div>
+                        <div class="x_0">
+                            <custom-rod-button x="0" z="0"></custom-rod-button>
+                            <custom-rod-button x="0" z="1"></custom-rod-button>
+                            <custom-rod-button x="0" z="2"></custom-rod-button>
+                            <custom-rod-button x="0" z="3"></custom-rod-button>
+                        </div>
+                        <div class="x_1">
+                            <custom-rod-button x="1" z="0"></custom-rod-button>
+                            <custom-rod-button x="1" z="1"></custom-rod-button>
+                            <custom-rod-button x="1" z="2"></custom-rod-button>
+                            <custom-rod-button x="1" z="3"></custom-rod-button>
+                        </div>
+                        <div class="x_2">
+                            <custom-rod-button x="2" z="0"></custom-rod-button>
+                            <custom-rod-button x="2" z="1"></custom-rod-button>
+                            <custom-rod-button x="2" z="2"></custom-rod-button>
+                            <custom-rod-button x="2" z="3"></custom-rod-button>
+                        </div>
+                        <div class="x_3">
+                            <custom-rod-button x="3" z="0"></custom-rod-button>
+                            <custom-rod-button x="3" z="1"></custom-rod-button>
+                            <custom-rod-button x="3" z="2"></custom-rod-button>
+                            <custom-rod-button x="3" z="3"></custom-rod-button>
+                        </div>
                     </div>
                 </div>
-            </div>
-            <div id="result">
+                <div class="log_and_result">
+                    <div id="log"></div>
+                    <div id="result">
+                    </div>
+                </div>
             </div>
         </div>
     </body>
