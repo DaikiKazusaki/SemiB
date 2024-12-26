@@ -155,6 +155,8 @@ class Environment(gym.Env):
     def compute_final_reward(self):
         ##ゲーム終了時最後の手番の人が勝利する
         ##黒が1白が-1
+        if np.all(self.board != 0):
+            return 0
         return float(self.current_player)
 
     # ボードの表示
