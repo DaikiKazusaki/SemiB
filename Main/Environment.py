@@ -37,9 +37,9 @@ class Environment(gym.Env):
     ## どこに置いたかの座標を戻り値にする
     def step(self, action):
         # actionは0~63の整数, これをボード上の(i,j,k)にマッピング
-        i = action // (self.board_size * self.board_size)
+        i = action % self.board_size
         j = (action // self.board_size) % self.board_size
-        k = action % self.board_size
+        k = action // (self.board_size * self.board_size)
         
         # 行動が有効か判定
         if not self.is_valid_move(i, j, k, self.current_player):
@@ -78,29 +78,7 @@ class Environment(gym.Env):
         if self.board[i, j, k] != 0:
             return False
         
-        # ひっくり返せる石があるか確認
-        directions = [
-            (di, dj, dk)
-            for di in [-1, 0, 1]
-            for dj in [-1, 0, 1]
-            for dk in [-1, 0, 1]
-            if not (di == 0 and dj == 0 and dk == 0)
-        ]
-        opponent = -player
-        for di, dj, dk in directions:
-            x, y, z = i + di, j + dj, k + dk
-            found_opponent = False
-            while 0 <= x < self.board_size and 0 <= y < self.board_size and 0 <= z < self.board_size:
-                if self.board[x, y, z] == opponent:
-                    found_opponent = True
-                    x += di
-                    y += dj
-                    z += dk
-                elif self.board[x, y, z] == player and found_opponent:
-                    return True
-                else:
-                    break
-        return False        
+        return True  
 
     # 指定された位置に石を置く
     # 立体四目並べでは石を反転する必要がないため，石を置くだけでよい
