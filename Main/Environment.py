@@ -34,19 +34,59 @@ class Environment(gym.Env):
         return observation, info
     
     # 行動の実行
+    ## どこに置いたかの座標を戻り値にする
     def step(self, action):
-        pass
+        # actionは0~63の整数, これをボード上の(i,j,k)にマッピング
+        i = action % self.board_size
+        j = (action // self.board_size) % self.board_size
+        k = action // (self.board_size * self.board_size)
+        
+        # 行動が有効か判定
+        if not self.is_valid_move(i, j, k, self.current_player):
+            # 無効手を打った場合は大きな負の報酬を与え、エピソード終了とするなどの処理を行う
+            # ここでは簡易的に、報酬=-1でゲーム終了
+            reward = -1
+            terminated = True
+            info = {"illegal_move": True}
+            return self.board.copy(), reward, terminated, False, info
+        
+        # 石を置く
+        self.place_disc(i, j, k, self.current_player)
+
+        # 次のプレイヤーへ
+        self.current_player *= -1
+
+        # 相手の行動(ここではランダム)
+        self.opponent_move()
+
+        # 終了判定
+        terminated = self.is_game_over()
+        if terminated:
+            reward = self.compute_final_reward()
+        else:
+            reward = 0.0
+
+        info = {}
+        return self.board.copy(), reward, terminated, False, info
 
     # 指定された位置に石を置けるかどうか
     ## i: x座標, j: y座標, k: z座標, player: 石の色(黒=1, 白=-1)
     def is_valid_move(self, i, j, k, player):
-        pass
+        # ボード外、既に埋まっているマスは×
+        if i < 0 or i >= self.board_size or j < 0 or j >= self.board_size or k < 0 or k >= self.board_size:
+            return False
+        if self.board[i, j, k] != 0:
+            return False
+        
+        return True  
 
     # 指定された位置に石を置く
+    # 立体四目並べでは石を反転する必要がないため，石を置くだけでよい
     ## i: x座標, j: y座標, k: z座標, player: 石の色(黒=1, 白=-1)
     def place_disc(self, i, j, k, player):
-        pass
+        self.board[i, j, k] = player      
 
+    ## 以下順也の担当
     # 石を置いた後の(AIの)相手の処理
     def opponent_move(self):
         pass
