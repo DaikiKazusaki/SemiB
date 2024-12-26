@@ -150,13 +150,6 @@ class Environment(gym.Env):
             return False
 
         return True
-
-            
-            ##双方打てる部分がない
-        if np.all(self.board != 0):
-            return False
-        
-        #pass
     
     # ゲーム終了時に報酬を計算する
     def compute_final_reward(self):
