@@ -141,11 +141,8 @@ class Environment(gym.Env):
 
         # 盤面全体を走査して勝利条件を確認
         for x in range(self.board_size):
-            if  x==1 or x==2 : break
             for y in range(self.board_size):
-                if  y==1 or y==2 : break
                 for z in range(self.board_size):
-                    if  z==1 or z==2 : break
                     for dx, dy, dz in directions:
                         if check_line(x, y, z, dx, dy, dz):
                             return True  # 勝利条件を満たすラインがあればゲーム終了
