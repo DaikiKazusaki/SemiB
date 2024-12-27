@@ -2,4 +2,4 @@
 **/.DS_Store
 Main/board_renderer/result/
 # pythonの仮想環境
-**/venv
+**/venv/
