@@ -89,16 +89,77 @@ class Environment(gym.Env):
     ## 以下順也の担当
     # 石を置いた後の(AIの)相手の処理
     def opponent_move(self):
-        pass
+        # シンプルに相手はランダムで有効手を打つ
+        valid_moves = []
+        for pos in range(self.board_size * self.board_size * self.board_size):
+            i = pos // (self.board_size * self.board_size)
+            j = (pos // self.board_size) % self.board_size
+            k = pos % self.board_size
+            if self.is_valid_move(i, j, k, self.current_player):
+                valid_moves.append(pos)
+                
+        if valid_moves:
+            chosen = np.random.choice(valid_moves)
+            i = chosen // (self.board_size * self.board_size)
+            j = (chosen  // self.board_size) % self.board_size
+            k = chosen % self.board_size
+            self.place_disc(i, j, k, self.current_player)
+        
+        self.current_player *= -1
 
     # ゲームの終了判定
-    ## return: True=ゲーム継続, False=ゲーム終了
+    ## return: True=ゲーム終了, False=ゲーム継続
     def is_game_over(self):
-        pass
+        directions = [
+        (1, 0, 0),  # x方向
+        (0, 1, 0),  # y方向
+        (0, 0, 1),  # z方向
+        (1, 1, 0),  # x-y平面の対角線
+        (1, -1, 0),
+        (1, 0, 1),  # x-z平面の対角線
+        (1, 0,-1),
+        (0, 1, 1),  # y-z平面の対角線
+        (0, 1,-1),
+        (1, 1, 1),  # 立体対角線
+        (1, 1,-1),
+        (1, -1, 1),  # 逆立体対角線
+        (1, -1, -1)
+        ]
+
+        def check_line(x, y, z, dx, dy, dz):
+            """指定された方向(dx, dy, dz)に4つ並んでいるか確認する"""
+            player = self.board[x, y, z]
+            if player == 0:
+                return False
+            for step in range(1, 4):
+                nx, ny, nz = x + step * dx, y + step * dy, z + step * dz
+                if not (0 <= nx < self.board_size and 0 <= ny < self.board_size and 0 <= nz < self.board_size):
+                    return False
+                if self.board[nx, ny, nz] != player:
+                    return False
+            return True
+
+        # 盤面全体を走査して勝利条件を確認
+        for x in range(self.board_size):
+            for y in range(self.board_size):
+                for z in range(self.board_size):
+                    for dx, dy, dz in directions:
+                        if check_line(x, y, z, dx, dy, dz):
+                            return True  # 勝利条件を満たすラインがあればゲーム終了
+
+        # 盤面が全て埋まっている場合もゲーム終了
+        if np.all(self.board != 0):
+            return True
+
+        return False
     
     # ゲーム終了時に報酬を計算する
     def compute_final_reward(self):
-        pass
+        ##ゲーム終了時最後の手番の人が勝利する
+        ##黒が1白が-1
+        if np.all(self.board != 0):
+            return 0
+        return float(self.current_player)
 
     # ボードの表示
     def render(self):
