@@ -168,48 +168,50 @@ App.init = function() {{
     pointLight.position.set(10, 15, 10);
     App.scene.add(pointLight);
 
+    // 盤面の更新
+    const updateBoard = function() {{
+        if (i >= move_len) {{ return; }}
+        // 次の手を指す
+        const [ nextX, nextZ ] = moves[i];
+        const targetRod = App.rods.filter(function(rod) {{
+            const {{ x, z }} = rod.userData;
+            return nextX == x && nextZ == z;
+        }})[0];
+
+        const sphereRadius = 0.55;
+        const whiteMaterial = new THREE.MeshPhongMaterial({{ color: 0xffffff }});
+        const blackMaterial = new THREE.MeshPhongMaterial({{ color: 0x000000 }});
+        const sphereGeometry = new THREE.SphereGeometry(sphereRadius, 16, 16);
+        const material = App.turnCount % 2 === 0 ? blackMaterial : whiteMaterial;
+        const sphere = new THREE.Mesh(sphereGeometry, material);
+        sphere.position.set(
+            targetRod.position.x,
+            -1.5 + targetRod.userData.spheres, // 縦に積む
+            targetRod.position.z
+        );
+        App.scene.add(sphere);
+
+        // 盤面情報を更新
+        App.board[nextX][targetRod.userData.spheres][nextZ] =
+            App.turnCount % 2 === 0 ? 1 : -1;
+        
+        targetRod.userData.spheres++;
+        App.turnCount++;
+
+        // interval後にまた更新
+        window.setTimeout(updateBoard, interval);
+        i++;
+    }};
+    updateBoard();
 }};
 
 // 表示の更新
 App.animate = function() {{
-    if (i >= move_len) {{ return; }}
-    // 次の手を指す
-    const [ nextX, nextZ ] = moves[i];
-    const targetRod = App.rods.filter(function(rod) {{
-        const {{ x, z }} = rod.userData;
-        return nextX == x && nextZ == z;
-    }})[0];
-
-    const sphereRadius = 0.55;
-    const whiteMaterial = new THREE.MeshPhongMaterial({{ color: 0xffffff }});
-    const blackMaterial = new THREE.MeshPhongMaterial({{ color: 0x000000 }});
-    const sphereGeometry = new THREE.SphereGeometry(sphereRadius, 16, 16);
-    const material = App.turnCount % 2 === 0 ? blackMaterial : whiteMaterial;
-    const sphere = new THREE.Mesh(sphereGeometry, material);
-    sphere.position.set(
-        targetRod.position.x,
-        -1.5 + targetRod.userData.spheres, // 縦に積む
-        targetRod.position.z
-    );
-    App.scene.add(sphere);
-
-    // 盤面情報を更新
-    App.board[nextX][targetRod.userData.spheres][nextZ] =
-        App.turnCount % 2 === 0 ? 1 : -1;
-    
-    targetRod.userData.spheres++;
-    App.turnCount++;
-
-    // interval後にまた描画
-    window.setTimeout(App.animate, interval);
-
+    requestAnimationFrame(App.animate);
     // カメラ操作を反映
     App.controls.update();
-
     // 再描画
     App.renderer.render(App.scene, App.camera);
-
-    i++;
 }};
 """
         )
