@@ -93,20 +93,22 @@ class Environment(gym.Env):
         valid_moves = []
         for pos in range(self.board_size * self.board_size * self.board_size):
             i = pos // (self.board_size * self.board_size)
-            j = pos // self.board_size
+            j = (pos // self.board_size) % self.board_size
             k = pos % self.board_size
             if self.is_valid_move(i, j, k, self.current_player):
                 valid_moves.append(pos)
+                
         if valid_moves:
             chosen = np.random.choice(valid_moves)
             i = chosen // (self.board_size * self.board_size)
-            j = chosen // self.board_size
+            j = (chosen  // self.board_size) % self.board_size
             k = chosen % self.board_size
             self.place_disc(i, j, k, self.current_player)
+        
         self.current_player *= -1
 
     # ゲームの終了判定
-    ## return: True=ゲーム継続, False=ゲーム終了
+    ## return: True=ゲーム終了, False=ゲーム継続
     def is_game_over(self):
         directions = [
         (1, 0, 0),  # x方向
@@ -139,17 +141,20 @@ class Environment(gym.Env):
 
         # 盤面全体を走査して勝利条件を確認
         for x in range(self.board_size):
+            if  x==1 or x==2 : break
             for y in range(self.board_size):
+                if  y==1 or y==2 : break
                 for z in range(self.board_size):
+                    if  z==1 or z==2 : break
                     for dx, dy, dz in directions:
                         if check_line(x, y, z, dx, dy, dz):
-                            return False  # 勝利条件を満たすラインがあればゲーム終了
+                            return True  # 勝利条件を満たすラインがあればゲーム終了
 
         # 盤面が全て埋まっている場合もゲーム終了
         if np.all(self.board != 0):
-            return False
+            return True
 
-        return True
+        return False
     
     # ゲーム終了時に報酬を計算する
     def compute_final_reward(self):
