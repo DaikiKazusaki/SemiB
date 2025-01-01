@@ -146,9 +146,12 @@ App.init = function() {
     const ambientLight = new THREE.AmbientLight(0xaaaaaa, 1); // 環境光
     App.scene.add(ambientLight);
 
-    const pointLight = new THREE.PointLight(0xffffff, 2); // 点光源（強度を2倍）
-    pointLight.position.set(10, 15, 10);
-    App.scene.add(pointLight);
+    // const pointLight = new THREE.PointLight(0xffffff, 2); // 点光源（強度を2倍）
+    // pointLight.position.set(10, 15, 10);
+    // App.scene.add(pointLight);
+
+    const dirLight = new THREE.DirectionalLight(0xffffff, 1);
+    App.scene.add(dirLight);
 
     // マウスイベントの設定
     const raycaster = new THREE.Raycaster();
