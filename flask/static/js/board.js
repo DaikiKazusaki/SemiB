@@ -251,8 +251,13 @@ App.init = function() {
 
     function onMouseMove(event) {
         // マウス位置を計算
-        mouse.x = (event.clientX / canvas.width) * 2 - 1;
-        mouse.y = -(event.clientY / canvas.height) * 2 + 1;
+        const element = event.currentTarget;
+        const x = event.clientX - element.offsetLeft;
+        const y = event.clientY - element.offsetTop;
+        const w = element.offsetWidth;
+        const h = element.offsetHeight;
+        mouse.x = (x / w) * 2 - 1;
+        mouse.y = -(y / h) * 2 + 1;
 
         // レイキャスト
         raycaster.setFromCamera(mouse, App.camera);
@@ -263,12 +268,22 @@ App.init = function() {
             const { x, z } = intersects[0].object.userData;
             setRodHighLight(x, z);
         }
+        else {
+            // 選択されていた棒をデフォルト色に
+            setRodsDefaultColor();
+        }
     }
 
     function onMouseClick(event) {
+        if (App.isGameOver) { return; }
         // マウス位置を計算
-        mouse.x = (event.clientX / canvas.width) * 2 - 1;
-        mouse.y = -(event.clientY / canvas.height) * 2 + 1;
+        const element = event.currentTarget;
+        const x = event.clientX - element.offsetLeft;
+        const y = event.clientY - element.offsetTop;
+        const w = element.offsetWidth;
+        const h = element.offsetHeight;
+        mouse.x = (x / w) * 2 - 1;
+        mouse.y = -(y / h) * 2 + 1;
 
         // レイキャスト
         raycaster.setFromCamera(mouse, App.camera);
