@@ -13,7 +13,7 @@ PORT = 8000
 #           eg. [[0, 0], [0, 1], [1, 0], ...]
 #   interval: アニメーションの切り替わり間隔(msec)
 #   browse: ローカルホストを立ち上げてブラウザで閲覧するかどうか
-def render(moves, interval=1000, browse=True):
+def render(moves, interval=1000, browse=False):
     if not browse:
         RESULT_DIR = 'result'
         os.makedirs(RESULT_DIR, exist_ok=True)
@@ -49,12 +49,7 @@ def _create_page(dname, moves, interval):
     if (not os.path.exists(dname)):
         raise FileNotFoundError(dname)
     INDEX_FILE = 'index.html'
-    JS_FILE = 'script.js'
-    JS_DIRECTORY = 'js'
     index_path = os.path.join(dname, INDEX_FILE)
-    js_path = os.path.join(dname, JS_DIRECTORY, JS_FILE)
-    js_relpath = os.path.join(JS_DIRECTORY, JS_FILE)
-    os.makedirs(os.path.join(dname, JS_DIRECTORY), exist_ok=True)
     # index.htmlの作成
     with open(index_path, mode='w', encoding='utf-8') as f:
         f.write(
@@ -71,148 +66,183 @@ f"""\
                 }}
             }}
         </script>
-        <script type="module" src="{js_relpath}"></script>
     </head>
     <body>
-        <canvas id="CANVAS1" width="800" height="800" style="border: 1px solid black;"></canvas>
+        <canvas id="board" width="800" height="800" style="border: 1px solid black;"></canvas>
+        <script type="module">
+            import * as THREE from 'three';
+            import {{ OrbitControls }} from 'three/addons/controls/OrbitControls.js';
+            import {{ TextGeometry }} from 'three/addons/geometries/TextGeometry.js';
+            import {{ FontLoader }} from 'three/addons/loaders/FontLoader.js';
+
+            window.onload = event => {{
+                // 初期化
+                App.init();
+                // アニメーションの表示開始
+                App.animate();
+            }};
+
+            const App = {{
+                camera: null,     // カメラ
+                scene: null,      // シーン
+                renderer: null,   // 描画処理
+                controls: null,   // カメラ操作用コントロール
+                rods: [],         // 棒の配列
+                board: [],        // 現在の盤面 (4×4×4形式)
+                clickLog: [],     // クリックした棒の記録
+                turnCount: 0,     // ターン数（奇数・偶数を判定）
+                isGameOver: false,// ゲームが終わったか
+            }};
+
+            App.isMyTurn = function() {{
+                return App.turnCount % 2 == 0;
+            }}
+
+            App.init = function() {{
+                const canvas = document.querySelector("#board");
+
+                // カメラの設定
+                App.camera = new THREE.PerspectiveCamera(75, canvas.width / canvas.height, 1, 10000);
+                App.camera.position.set(7, 7, 10);
+                App.scene = new THREE.Scene();
+
+                // 背景色の設定
+                App.renderer = new THREE.WebGLRenderer({{ canvas: canvas }});
+                App.renderer.setClearColor(0xf0f8ff); // アリスブルー
+                App.renderer.setSize(canvas.width, canvas.height);
+
+                // カメラ操作のコントロール
+                App.controls = new OrbitControls(App.camera, canvas);
+                App.controls.enableDamping = true; // 慣性を有効にする
+                App.controls.dampingFactor = 0.1;
+
+                // 基板の追加（淡い緑色）
+                const gridSize = 4;
+                const leftBound = -5.0;
+                const rightBound = -leftBound;
+                const gap = (rightBound - leftBound) / (gridSize - 1);
+                const baseMaterial = new THREE.MeshLambertMaterial({{ color: 0xadff2f }});
+                const baseGeometry = new THREE.BoxGeometry(rightBound - leftBound + 2, 1, rightBound - leftBound + 2);
+                const base = new THREE.Mesh(baseGeometry, baseMaterial);
+                base.position.y = -2.5;
+                App.scene.add(base);
+
+                // 球体と棒を描画
+                const rodMaterialDefault = new THREE.MeshLambertMaterial({{ color: 0x0000ff }});
+                const rodMaterialHighlight = new THREE.MeshLambertMaterial({{ color: 0x00ffff }});
+                const sphereRadius = 0.55;
+                const whiteMaterial = new THREE.MeshPhongMaterial({{ color: 0xffffff }});
+                const blackMaterial = new THREE.MeshPhongMaterial({{ color: 0x000000 }});
+                const setRodsDefaultColor = function() {{
+                    App.rods.forEach(rod => rod.material = rodMaterialDefault);
+                }};
+                const setRodHighLight = function(x, z) {{
+                    setRodsDefaultColor();  // 一旦デフォルト色
+                    App.rods.filter(
+                        function(rod) {{
+                            return rod.userData.x == x && rod.userData.z == z;
+                        }}
+                    ).forEach(selectedRod => selectedRod.material = rodMaterialHighlight);
+                }};
+
+
+                App.board = Array.from({{ length: gridSize }}, () =>
+                    Array.from({{ length: gridSize }}, () => Array(gridSize).fill(0))
+                );
+
+                for (let x = 0; x < gridSize; x++) {{
+                    for (let z = 0; z < gridSize; z++) {{
+                        // 棒の作成
+                        const rodHeight = gridSize + 1;
+                        const rodGeometry = new THREE.CylinderGeometry(0.2, 0.2, rodHeight, 16);
+                        const rod = new THREE.Mesh(rodGeometry, rodMaterialDefault);
+                        rod.position.set(leftBound + gap * x, 0, leftBound + gap * z);
+                        rod.userData = {{ x, z, spheres: 0 }}; // 棒の状態を追跡
+                        App.scene.add(rod);
+                        App.rods.push(rod);
+                    }}
+                }}
+
+                // // X軸, Y軸, Z軸の描画
+                // const axisMaterial = new THREE.LineBasicMaterial({{ color: 0x000000 }});
+                // const xPoints = [];
+                // xPoints.push( new THREE.Vector3(leftBound - 3, -3, leftBound - 3) );
+                // xPoints.push( new THREE.Vector3(rightBound + 3, -3, leftBound - 3) );
+                // const xGeometry = new THREE.BufferGeometry().setFromPoints(xPoints);
+                // const xLine = new THREE.Line(xGeometry, axisMaterial);
+                // App.scene.add(xLine);
+                // const yPoints = [];
+                // yPoints.push( new THREE.Vector3(leftBound - 3, -3, leftBound - 3) );
+                // yPoints.push( new THREE.Vector3(leftBound - 3, 7, leftBound - 3) );
+                // const yGeometry = new THREE.BufferGeometry().setFromPoints(yPoints);
+                // const yLine = new THREE.Line(yGeometry, axisMaterial);
+                // App.scene.add(yLine);
+                // const zPoints = [];
+                // zPoints.push( new THREE.Vector3(leftBound - 3, -3, leftBound - 3) );
+                // zPoints.push( new THREE.Vector3(leftBound - 3, -3, rightBound + 3) );
+                // const zGeometry = new THREE.BufferGeometry().setFromPoints(zPoints);
+                // const zLine = new THREE.Line(zGeometry, axisMaterial);
+                // App.scene.add(zLine);
+                // // X, Y, Zの文字
+                // const loader = new FontLoader();
+                // const labelMaterial = new THREE.MeshNormalMaterial();
+
+                // loader.load('fonts/Roboto_Regular.json', function ( font ) {{
+                    // const xLabelGeometry = new TextGeometry( 'X', {{
+                        // font: font,
+                        // size: 1,
+                        // depth: 0.25,
+                    // }} );
+                    // xLabelGeometry.center();
+                    // const xLabel = new THREE.Mesh(xLabelGeometry, labelMaterial);
+                    // xLabel.position.set(rightBound + 4, -3, leftBound - 3);
+                    // App.scene.add(xLabel);
+                    // const yLabelGeometry = new TextGeometry( 'Y', {{
+                        // font: font,
+                        // size: 1,
+                        // depth: 0.25,
+                    // }} );
+                    // yLabelGeometry.center();
+                    // const yLabel = new THREE.Mesh(yLabelGeometry, labelMaterial);
+                    // yLabel.position.set(leftBound - 3, 8, leftBound - 3);
+                    // App.scene.add(yLabel);
+                    // const zLabelGeometry = new TextGeometry( 'Z', {{
+                        // font: font,
+                        // size: 1,
+                        // depth: 0.25,
+                    // }} );
+                    // zLabelGeometry.center();
+                    // const zLabel = new THREE.Mesh(zLabelGeometry, labelMaterial);
+                    // zLabel.position.set(leftBound - 3, -3, rightBound + 4);
+                    // App.scene.add(zLabel);
+                // }} );
+
+                // 照明を追加（明るく設定）
+                const ambientLight = new THREE.AmbientLight(0xaaaaaa, 1); // 環境光
+                App.scene.add(ambientLight);
+
+                // const pointLight = new THREE.PointLight(0xffffff, 2); // 点光源（強度を2倍）
+                // pointLight.position.set(10, 15, 10);
+                // App.scene.add(pointLight);
+
+                const dirLight = new THREE.DirectionalLight(0xffffff, 1);
+                App.scene.add(dirLight);
+            }};
+
+            // 表示の更新
+            App.animate = function() {{
+                requestAnimationFrame(App.animate);
+
+                // カメラ操作を反映
+                App.controls.update();
+
+                // 再描画
+                App.renderer.render(App.scene, App.camera);
+            }};
+
+        </script>
     </body>
 </html>
-"""
-        )
-    # script.jsの作成
-    move_len = len(moves)
-    with open(js_path, mode='w', encoding='utf-8') as f:
-        f.write(
-f"""\
-import * as THREE from 'three';
-import {{ OrbitControls }} from 'three/addons/controls/OrbitControls.js';
-
-let i = 0;
-const move_len = {move_len};
-const moves = {str(moves)};
-const interval = {interval};
-
-window.onload = event => {{
-    // 初期化
-    App.init();
-    // アニメーションの表示開始
-    App.animate();
-}};
-
-const App = {{
-    camera: null,     // カメラ
-    scene: null,      // シーン
-    renderer: null,   // 描画処理
-    controls: null,   // カメラ操作用コントロール
-    rods: [],         // 棒の配列
-    board: [],        // 現在の盤面 (4×4×4形式)
-    clickLog: [],     // クリックした棒の記録
-    turnCount: 0,     // ターン数（奇数・偶数を判定）
-}};
-
-App.init = function() {{
-    const canvas = document.querySelector('#CANVAS1');
-
-    // カメラの設定
-    App.camera = new THREE.PerspectiveCamera(75, canvas.width / canvas.height, 1, 10000);
-    App.camera.position.set(7, 7, 15);
-    App.scene = new THREE.Scene();
-
-    // 背景色の設定
-    App.renderer = new THREE.WebGLRenderer({{ canvas: canvas }});
-    App.renderer.setClearColor(0xf0f8ff); // アリスブルー
-    App.renderer.setSize(canvas.width, canvas.height);
-
-    // カメラ操作のコントロール
-    App.controls = new OrbitControls(App.camera, canvas);
-    App.controls.enableDamping = true; // 慣性を有効にする
-    App.controls.dampingFactor = 0.1;
-
-    // 基板の追加（淡い緑色）
-    const baseMaterial = new THREE.MeshLambertMaterial({{ color: 0xadff2f }});
-    const baseGeometry = new THREE.BoxGeometry(8, 1, 8);
-    const base = new THREE.Mesh(baseGeometry, baseMaterial);
-    base.position.y = -2.5;
-    App.scene.add(base);
-
-    // 球体と棒を描画
-    const gridSize = 4;
-    const rodMaterialDefault = new THREE.MeshLambertMaterial({{ color: 0x0000ff }});
-    const rodMaterialHighlight = new THREE.MeshLambertMaterial({{ color: 0x00ffff }});
-    const sphereRadius = 0.55;
-    const whiteMaterial = new THREE.MeshPhongMaterial({{ color: 0xffffff }});
-    const blackMaterial = new THREE.MeshPhongMaterial({{ color: 0x000000 }});
-
-    App.board = Array.from({{ length: gridSize }}, () =>
-        Array.from({{ length: gridSize }}, () => Array(gridSize).fill(0))
-    );
-
-    for (let x = 0; x < gridSize; x++) {{
-        for (let z = 0; z < gridSize; z++) {{
-            // 棒の作成
-            const rodHeight = gridSize + 1;
-            const rodGeometry = new THREE.CylinderGeometry(0.2, 0.2, rodHeight, 16);
-            const rod = new THREE.Mesh(rodGeometry, rodMaterialDefault);
-            rod.position.set(2*x - 3, 0, 2*z - 3);
-            rod.userData = {{ x, z, spheres: 0 }}; // 棒の状態を追跡
-            App.scene.add(rod);
-            App.rods.push(rod);
-        }}
-    }}
-
-    // 照明を追加（明るく設定）
-    const ambientLight = new THREE.AmbientLight(0xaaaaaa, 1); // 環境光
-    App.scene.add(ambientLight);
-
-    const pointLight = new THREE.PointLight(0xffffff, 2); // 点光源（強度を2倍）
-    pointLight.position.set(10, 15, 10);
-    App.scene.add(pointLight);
-
-    // 盤面の更新
-    const updateBoard = function() {{
-        if (i >= move_len) {{ return; }}
-        // 次の手を指す
-        const [ nextX, nextZ ] = moves[i];
-        const targetRod = App.rods.filter(function(rod) {{
-            const {{ x, z }} = rod.userData;
-            return nextX == x && nextZ == z;
-        }})[0];
-
-        const sphereRadius = 0.55;
-        const whiteMaterial = new THREE.MeshPhongMaterial({{ color: 0xffffff }});
-        const blackMaterial = new THREE.MeshPhongMaterial({{ color: 0x000000 }});
-        const sphereGeometry = new THREE.SphereGeometry(sphereRadius, 16, 16);
-        const material = App.turnCount % 2 === 0 ? blackMaterial : whiteMaterial;
-        const sphere = new THREE.Mesh(sphereGeometry, material);
-        sphere.position.set(
-            targetRod.position.x,
-            -1.5 + targetRod.userData.spheres, // 縦に積む
-            targetRod.position.z
-        );
-        App.scene.add(sphere);
-
-        // 盤面情報を更新
-        App.board[nextX][targetRod.userData.spheres][nextZ] =
-            App.turnCount % 2 === 0 ? 1 : -1;
-        
-        targetRod.userData.spheres++;
-        App.turnCount++;
-
-        // interval後にまた更新
-        window.setTimeout(updateBoard, interval);
-        i++;
-    }};
-    updateBoard();
-}};
-
-// 表示の更新
-App.animate = function() {{
-    requestAnimationFrame(App.animate);
-    // カメラ操作を反映
-    App.controls.update();
-    // 再描画
-    App.renderer.render(App.scene, App.camera);
-}};
 """
         )
 
