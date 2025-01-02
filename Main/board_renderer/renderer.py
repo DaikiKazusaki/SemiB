@@ -13,36 +13,34 @@ PORT = 8000
 #           eg. [[0, 0], [0, 1], [1, 0], ...]
 #   interval: アニメーションの切り替わり間隔(msec)
 #   browse: ローカルホストを立ち上げてブラウザで閲覧するかどうか
-def render(moves, interval=1000, browse=False):
+def render(moves, dir_path = 'result', interval=1000, browse=False):
     if not browse:
-        RESULT_DIR = 'result'
-        os.makedirs(RESULT_DIR, exist_ok=True)
-        _create_page(RESULT_DIR, moves, interval)
+        os.makedirs(dir_path, exist_ok=True)
+        _create_page(dir_path, moves, interval)
     else:
-        with tempfile.TemporaryDirectory() as dname:
-            _create_page(dname, moves, interval)
-            # リクエストハンドラ
-            class _Handler(http.server.SimpleHTTPRequestHandler):
-                def translate_path(self, path):
-                    path = super().translate_path(path)
-                    return os.path.join(dname, os.path.relpath(path, start=os.getcwd()))
-            # サーバーを開始する関数
-            def start_server():
-                with socketserver.TCPServer(("", PORT), _Handler) as httpd:
-                    print(f'Please Access localhost:{PORT}.')
-                    httpd.serve_forever()
-            # サーバーをバックグラウンド実行
-            def run_server_background():
-                thread = threading.Thread(target=start_server)
-                thread.daemon = True            # メインプログラム終了とともに終了
-                thread.start()
-            # ブラウザ表示
-            def open_in_browser():
-                time.sleep(1)                   # サーバー起動まで待機
-                webbrowser.open(f'http://localhost:{PORT}')
-            run_server_background()
-            open_in_browser()
-            input('Press Enter to quit...')     # サーバーを終了させないために
+        _create_page(dir_path, moves, interval)
+        # リクエストハンドラ
+        class _Handler(http.server.SimpleHTTPRequestHandler):
+            def translate_path(self, path):
+                path = super().translate_path(path)
+                return os.path.join(dir_path, os.path.relpath(path, start=os.getcwd()))
+        # サーバーを開始する関数
+        def start_server():
+            with socketserver.TCPServer(("", PORT), _Handler) as httpd:
+                print(f'Please Access localhost:{PORT}.')
+                httpd.serve_forever()
+        # サーバーをバックグラウンド実行
+        def run_server_background():
+            thread = threading.Thread(target=start_server)
+            thread.daemon = True            # メインプログラム終了とともに終了
+            thread.start()
+        # ブラウザ表示
+        def open_in_browser():
+            time.sleep(1)                   # サーバー起動まで待機
+            webbrowser.open(f'http://localhost:{PORT}')
+        run_server_background()
+        open_in_browser()
+        input('Press Enter to quit...')     # サーバーを終了させないために
 
 # ブラウザに表示するためのhtml,jsファイルを生成する
 def _create_page(dname, moves, interval):
@@ -254,4 +252,4 @@ if __name__ == "__main__":
         [1, 3],
         [2, 0]
     ]
-    render(sample_move, interval=20000)
+    render(sample_move, interval=20000, browse=True)
