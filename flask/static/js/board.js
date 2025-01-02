@@ -45,14 +45,17 @@ App.init = function() {
     App.controls.dampingFactor = 0.1;
 
     // 基板の追加（淡い緑色）
+    const gridSize = 4;
+    const leftBound = -5.0;
+    const rightBound = -leftBound;
+    const gap = (rightBound - leftBound) / (gridSize - 1);
     const baseMaterial = new THREE.MeshLambertMaterial({ color: 0xadff2f });
-    const baseGeometry = new THREE.BoxGeometry(8, 1, 8);
+    const baseGeometry = new THREE.BoxGeometry(rightBound - leftBound + 2, 1, rightBound - leftBound + 2);
     const base = new THREE.Mesh(baseGeometry, baseMaterial);
     base.position.y = -2.5;
     App.scene.add(base);
 
     // 球体と棒を描画
-    const gridSize = 4;
     const rodMaterialDefault = new THREE.MeshLambertMaterial({ color: 0x0000ff });
     const rodMaterialHighlight = new THREE.MeshLambertMaterial({ color: 0x00ffff });
     const sphereRadius = 0.55;
@@ -81,7 +84,7 @@ App.init = function() {
             const rodHeight = gridSize + 1;
             const rodGeometry = new THREE.CylinderGeometry(0.2, 0.2, rodHeight, 16);
             const rod = new THREE.Mesh(rodGeometry, rodMaterialDefault);
-            rod.position.set(2*x - 3, 0, 2*z - 3);
+            rod.position.set(leftBound + gap * x, 0, leftBound + gap * z);
             rod.userData = { x, z, spheres: 0 }; // 棒の状態を追跡
             App.scene.add(rod);
             App.rods.push(rod);
@@ -91,20 +94,20 @@ App.init = function() {
     // X軸, Y軸, Z軸の描画
     const axisMaterial = new THREE.LineBasicMaterial({ color: 0x000000 });
     const xPoints = [];
-    xPoints.push( new THREE.Vector3(-7, -3, -7) );
-    xPoints.push( new THREE.Vector3(7, -3, -7) );
+    xPoints.push( new THREE.Vector3(leftBound - 3, -3, leftBound - 3) );
+    xPoints.push( new THREE.Vector3(rightBound + 3, -3, leftBound - 3) );
     const xGeometry = new THREE.BufferGeometry().setFromPoints(xPoints);
     const xLine = new THREE.Line(xGeometry, axisMaterial);
     App.scene.add(xLine);
     const yPoints = [];
-    yPoints.push( new THREE.Vector3(-7, -3, -7) );
-    yPoints.push( new THREE.Vector3(-7, 7, -7) );
+    yPoints.push( new THREE.Vector3(leftBound - 3, -3, leftBound - 3) );
+    yPoints.push( new THREE.Vector3(leftBound - 3, 7, leftBound - 3) );
     const yGeometry = new THREE.BufferGeometry().setFromPoints(yPoints);
     const yLine = new THREE.Line(yGeometry, axisMaterial);
     App.scene.add(yLine);
     const zPoints = [];
-    zPoints.push( new THREE.Vector3(-7, -3, -7) );
-    zPoints.push( new THREE.Vector3(-7, -3, 7) );
+    zPoints.push( new THREE.Vector3(leftBound - 3, -3, leftBound - 3) );
+    zPoints.push( new THREE.Vector3(leftBound - 3, -3, rightBound + 3) );
     const zGeometry = new THREE.BufferGeometry().setFromPoints(zPoints);
     const zLine = new THREE.Line(zGeometry, axisMaterial);
     App.scene.add(zLine);
@@ -120,7 +123,7 @@ App.init = function() {
         } );
         xLabelGeometry.center();
         const xLabel = new THREE.Mesh(xLabelGeometry, labelMaterial);
-        xLabel.position.set(8, -3, -7);
+        xLabel.position.set(rightBound + 4, -3, leftBound - 3);
         App.scene.add(xLabel);
         const yLabelGeometry = new TextGeometry( 'Y', {
             font: font,
@@ -129,7 +132,7 @@ App.init = function() {
         } );
         yLabelGeometry.center();
         const yLabel = new THREE.Mesh(yLabelGeometry, labelMaterial);
-        yLabel.position.set(-7, 8, -7);
+        yLabel.position.set(leftBound - 3, 8, leftBound - 3);
         App.scene.add(yLabel);
         const zLabelGeometry = new TextGeometry( 'Z', {
             font: font,
@@ -138,7 +141,7 @@ App.init = function() {
         } );
         zLabelGeometry.center();
         const zLabel = new THREE.Mesh(zLabelGeometry, labelMaterial);
-        zLabel.position.set(-7, -3, 8);
+        zLabel.position.set(leftBound - 3, -3, rightBound + 4);
         App.scene.add(zLabel);
     } );
 
