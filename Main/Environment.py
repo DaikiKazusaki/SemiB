@@ -88,24 +88,106 @@ class Environment(gym.Env):
 
     ## 以下順也の担当
     # 石を置いた後の(AIの)相手の処理
-    def opponent_move(self):
-        # シンプルに相手はランダムで有効手を打つ
+        def opponent_move(self):
+        directions = [
+            (1, 0, 0), (0, 1, 0), (0, 0, 1), (1, 1, 0), (1, -1, 0),
+            (1, 0, 1), (1, 0, -1), (0, 1, 1), (0, 1, -1),
+            (1, 1, 1), (1, 1, -1), (1, -1, 1), (1, -1, -1)
+        ]
+
+        def is_winning_move(i, j, k, player):
+            """置いたときに4つ揃うか確認"""
+            for dx, dy, dz in directions:
+                count = 1
+                for step in range(1, 4):
+                    ni, nj, nk = i + step * dx, j + step * dy, k + step * dz
+                    if 0 <= ni < self.board_size and 0 <= nj < self.board_size and 0 <= nk < self.board_size:
+                        if self.board[ni, nj, nk] == player:
+                            count += 1
+                        elif self.board[ni, nj, nk] != 0:
+                            break
+                    else:
+                        break
+
+                for step in range(1, 4):
+                    ni, nj, nk = i - step * dx, j - step * dy, k - step * dz
+                    if 0 <= ni < self.board_size and 0 <= nj < self.board_size and 0 <= nk < self.board_size:
+                        if self.board[ni, nj, nk] == player:
+                            count += 1
+                        elif self.board[ni, nj, nk] != 0:
+                            break
+                    else:
+                        break
+
+                if count >= 4:
+                    return True
+            return False
+
+        def can_form_three(i, j, k, player):
+            """2つ連続で置ける列があり、相手の駒がないか確認"""
+            for dx, dy, dz in directions:
+                count = 0
+                has_opponent = False
+                for step in range(-3, 4):
+                    ni, nj, nk = i + step * dx, j + step * dy, k + step * dz
+                    if 0 <= ni < self.board_size and 0 <= nj < self.board_size and 0 <= nk < self.board_size:
+                        if self.board[ni, nj, nk] == player:
+                            count += 1
+                        elif self.board[ni, nj, nk] == -player:
+                            has_opponent = True
+                            break
+                if count >= 2 and not has_opponent:
+                    return True
+            return False
+
         valid_moves = []
         for pos in range(self.board_size * self.board_size * self.board_size):
             i = pos // (self.board_size * self.board_size)
             j = (pos // self.board_size) % self.board_size
             k = pos % self.board_size
             if self.is_valid_move(i, j, k, self.current_player):
-                valid_moves.append(pos)
-                
+                valid_moves.append((i, j, k))
+
+        # 優先順位に基づく手の選択
+        for i, j, k in valid_moves:
+            if is_winning_move(i, j, k, self.current_player):
+                self.place_disc(i, j, k, self.current_player)
+                self.current_player *= -1
+                return
+
+        for i, j, k in valid_moves:
+            if is_winning_move(i, j, k, -self.current_player):
+                self.place_disc(i, j, k, self.current_player)
+                self.current_player *= -1
+                return
+
+        for i, j, k in valid_moves:
+            if can_form_three(i, j, k, self.current_player):
+                self.place_disc(i, j, k, self.current_player)
+                self.current_player *= -1
+                return
+
+        # 初手は1段目の4隅を優先
+        corners = [(0, 0, 0), (0, 0, self.board_size - 1), (0, self.board_size - 1, 0), (0, self.board_size - 1, self.board_size - 1)]
+        for i, j, k in corners:
+            if self.is_valid_move(i, j, k, self.current_player):
+                self.place_disc(i, j, k, self.current_player)
+                self.current_player *= -1
+                return
+
+        # 自分のマスに接続し、相手がいない方向を優先
+        for i, j, k in valid_moves:
+            if can_form_three(i, j, k, self.current_player):
+                self.place_disc(i, j, k, self.current_player)
+                self.current_player *= -1
+                return
+
+        # ランダムに有効手を選択
         if valid_moves:
-            chosen = np.random.choice(valid_moves)
-            i = chosen // (self.board_size * self.board_size)
-            j = (chosen  // self.board_size) % self.board_size
-            k = chosen % self.board_size
+            i, j, k = valid_moves[np.random.choice(len(valid_moves))]
             self.place_disc(i, j, k, self.current_player)
-        
-        self.current_player *= -1
+            self.current_player *= -1
+
 
     # ゲームの終了判定
     ## return: True=ゲーム終了, False=ゲーム継続
