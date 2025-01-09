@@ -86,7 +86,6 @@ class Environment(gym.Env):
     def place_disc(self, i, j, k, player):
         self.board[i, j, k] = player      
 
-    ## 以下順也の担当
     # 石を置いた後の(AIの)相手の処理
     def opponent_move(self):
         # シンプルに相手はランダムで有効手を打つ
