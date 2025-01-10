@@ -1,19 +1,22 @@
 import gymnasium as gym
 from gymnasium import spaces
 import numpy as np
+from typing import Optional
 
 list = []
 
 class Environment(gym.Env):
     # メタデータの定義
     ## Gymnasium環境に関する追加情報を格納するための辞書
-    metadata = {"render_modes": ["human"]}
+    metadata = {
+        "render_modes": ["human"],
+    }
 
     # クラスのインスタンス化時に呼ばれるメソッド(=コンストラクタ)
     # 盤面の設定や黒が先手などの設定を行う
-    def __init__(self, render_mode=None):
-        print("Environment initialized")
+    def __init__(self, render_mode: Optional[str] = None, is_print_log = False):
         super().__init__()
+        # 盤面サイズは4*4*4
         self.board_size = 4
         # 4 x 4 x 4 のマス，各マスは {空=0, 黒=1, 白=-1} とする
         self.observation_space = spaces.Box(low=-1, high=1, shape=(self.board_size, self.board_size, self.board_size), dtype=int)
@@ -24,6 +27,8 @@ class Environment(gym.Env):
         self.board = None
         self.current_player = 1  # 黒=1, 白=-1
         self.render_mode = render_mode
+        self.is_print_log = is_print_log
+        self.print_log('Initialized Environment!')
 
     # 環境の初期化
     ## 4 x 4 x 4 のマスを全て0にし，手番を黒にする
@@ -47,14 +52,20 @@ class Environment(gym.Env):
         # 行動が有効か判定
         if not self.is_valid_move(i, j, k, self.current_player):
             # 無効手を打った場合は大きな負の報酬を与え、エピソード終了とするなどの処理を行う
-            # ここでは簡易的に、報酬=-1でゲーム終了
-            reward = -1
+            reward = -2
             terminated = True
             info = {"illegal_move": True}
             return self.board.copy(), reward, terminated, False, info
         
         # 石を置く
         self.place_disc(i, j, k, self.current_player)
+
+        # 勝利判定
+        terminated = self.is_game_over()
+        if terminated:
+            reward = self.compute_final_reward()
+            self.print_log(f'self board is:\n{self.board}')
+            return self.board.copy(), reward, True, False, {}
 
         # 次のプレイヤーへ
         self.current_player *= -1
@@ -65,9 +76,7 @@ class Environment(gym.Env):
         # 終了判定
         terminated = self.is_game_over()
         if terminated:
-            with open('list.txt', 'w') as f:
-                for item in list:
-                    f.write("%s\n" % item)
+            self.print_log(f'self board is:\n{self.board}')
             reward = self.compute_final_reward()
         else:
             reward = 0.0
@@ -95,7 +104,7 @@ class Environment(gym.Env):
     # 立体四目並べでは石を反転する必要がないため，石を置くだけでよい
     ## i: x座標, j: y座標, k: z座標, player: 石の色(黒=1, 白=-1)
     def place_disc(self, i, j, k, player):
-        print(f"Player {player} placed a disc at ({i}, {j}, {k})")
+        self.print_log(f"Player {player} placed a disc at ({i}, {j}, {k})")
         list.append([i, j, k])
         self.board[i, j, k] = player      
 
@@ -104,17 +113,17 @@ class Environment(gym.Env):
         # シンプルに相手はランダムで有効手を打つ
         valid_moves = []
         for pos in range(self.board_size * self.board_size * self.board_size):
-            i = pos // (self.board_size * self.board_size)
+            i = pos % self.board_size
             j = (pos // self.board_size) % self.board_size
-            k = pos % self.board_size
+            k = pos // (self.board_size * self.board_size)
             if self.is_valid_move(i, j, k, self.current_player):
                 valid_moves.append(pos)
                 
         if valid_moves:
             chosen = np.random.choice(valid_moves)
-            i = chosen // (self.board_size * self.board_size)
-            j = (chosen  // self.board_size) % self.board_size
-            k = chosen % self.board_size
+            i = chosen % self.board_size
+            j = (chosen // self.board_size) % self.board_size
+            k = chosen // (self.board_size * self.board_size)
             self.place_disc(i, j, k, self.current_player)
         
         self.current_player *= -1
@@ -172,6 +181,10 @@ class Environment(gym.Env):
         if np.all(self.board != 0):
             return 0
         return float(self.current_player)
+
+    def print_log(self, log: str):
+        if self.is_print_log:
+            print(log)
 
     # ボードの表示
     def render(self):

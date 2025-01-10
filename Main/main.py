@@ -8,7 +8,7 @@ import gymnasium as gym
 env = Environment()
 
 model = PPO("MlpPolicy", env, verbose=1)
-model.learn(total_timesteps=10000)  # 任意
+model.learn(total_timesteps=100000)  # 任意
 
 # 学習後にテスト
 obs, info = env.reset()
@@ -17,6 +17,7 @@ tmp=obs.copy()
 move_list=[] #ここに履歴を保存
 while not done:
     action, _ = model.predict(obs)
+    print(obs)
     obs, reward, done, truncated, info = env.step(action)
     changed_indices=np.where(tmp != obs) #1step前との差分を取得
     change_list=[]
