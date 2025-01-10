@@ -2,6 +2,8 @@ import gymnasium as gym
 from gymnasium import spaces
 import numpy as np
 
+list = []
+
 class Environment(gym.Env):
     # メタデータの定義
     ## Gymnasium環境に関する追加情報を格納するための辞書
@@ -10,6 +12,7 @@ class Environment(gym.Env):
     # クラスのインスタンス化時に呼ばれるメソッド(=コンストラクタ)
     # 盤面の設定や黒が先手などの設定を行う
     def __init__(self, render_mode=None):
+        print("Environment initialized")
         super().__init__()
         self.board_size = 4
         # 4 x 4 x 4 のマス，各マスは {空=0, 黒=1, 白=-1} とする
@@ -62,6 +65,9 @@ class Environment(gym.Env):
         # 終了判定
         terminated = self.is_game_over()
         if terminated:
+            with open('list.txt', 'w') as f:
+                for item in list:
+                    f.write("%s\n" % item)
             reward = self.compute_final_reward()
         else:
             reward = 0.0
@@ -78,12 +84,19 @@ class Environment(gym.Env):
         if self.board[i, j, k] != 0:
             return False
         
+        # zが0～k-1の範囲で空いているマスがないかを判定
+        for z in range(k):
+            if self.board[i, j, z] == 0:
+                return False
+        
         return True  
 
     # 指定された位置に石を置く
     # 立体四目並べでは石を反転する必要がないため，石を置くだけでよい
     ## i: x座標, j: y座標, k: z座標, player: 石の色(黒=1, 白=-1)
     def place_disc(self, i, j, k, player):
+        print(f"Player {player} placed a disc at ({i}, {j}, {k})")
+        list.append([i, j, k])
         self.board[i, j, k] = player      
 
     # 石を置いた後の(AIの)相手の処理
