@@ -8,7 +8,7 @@ import gymnasium as gym
 env = Environment()
 
 model = PPO("MlpPolicy", env, verbose=1)
-model.learn(total_timesteps=100000)  # 任意
+model.learn(total_timesteps=10000)  # 任意
 
 # 学習後にテスト
 obs, info = env.reset()
