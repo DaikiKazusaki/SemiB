@@ -1,5 +1,6 @@
 import gymnasium as gym
 from gymnasium import spaces
+from Opponent import Opponent, RandomOpponent
 import numpy as np
 
 list = []
@@ -11,7 +12,7 @@ class Environment(gym.Env):
 
     # クラスのインスタンス化時に呼ばれるメソッド(=コンストラクタ)
     # 盤面の設定や黒が先手などの設定を行う
-    def __init__(self, render_mode=None):
+    def __init__(self, opponent = RandomOpponent, render_mode=None):
         print("Environment initialized")
         super().__init__()
         self.board_size = 4
@@ -23,6 +24,7 @@ class Environment(gym.Env):
         # 内部状態
         self.board = None
         self.current_player = 1  # 黒=1, 白=-1
+        self.opponent = opponent
         self.render_mode = render_mode
 
     # 環境の初期化
@@ -102,21 +104,8 @@ class Environment(gym.Env):
     # 石を置いた後の(AIの)相手の処理
     def opponent_move(self):
         # シンプルに相手はランダムで有効手を打つ
-        valid_moves = []
-        for pos in range(self.board_size * self.board_size * self.board_size):
-            i = pos // (self.board_size * self.board_size)
-            j = (pos // self.board_size) % self.board_size
-            k = pos % self.board_size
-            if self.is_valid_move(i, j, k, self.current_player):
-                valid_moves.append(pos)
-                
-        if valid_moves:
-            chosen = np.random.choice(valid_moves)
-            i = chosen // (self.board_size * self.board_size)
-            j = (chosen  // self.board_size) % self.board_size
-            k = chosen % self.board_size
-            self.place_disc(i, j, k, self.current_player)
-        
+        x, y, z = self.opponent.opponent_move(self.board)
+        self.place_disc(x, y, z)    # TODO: 不正値(-1, -1, -1)が返ってきた時とかの処理を実装
         self.current_player *= -1
 
     # ゲームの終了判定
