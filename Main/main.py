@@ -3,17 +3,21 @@ from Environment import Environment
 from board_renderer import renderer
 from stable_baselines3 import PPO
 import gymnasium as gym
+from Opponent.ModelOpponent import ModelOpponent
 
 # カスタム環境を登録するか、直接インスタンス化
-env = Environment()
+env = Environment(is_print_log=True, is_output_file=True)
 
-model = PPO("MlpPolicy", env, verbose=1)
-model.learn(total_timesteps=10000)  # 任意
+# model = PPO("MlpPolicy", env, verbose=1)
+# model.learn(total_timesteps=10000)  # 任意
+model = PPO.load("model_files/20250115_123404/20250115_123404_final_3d-tic-tac-toe.zip", env=env)
+model2 = PPO.load("model_files/20250115_123404/20250115_123404_final_3d-tic-tac-toe.zip", env=env)
 
 # 学習後にテスト
 obs, info = env.reset()
 done = False
 tmp=obs.copy()
+# env.set_opponent(ModelOpponent(model2, Environment()))
 move_list=[] #ここに履歴を保存
 while not done:
     action, _ = model.predict(obs)
@@ -31,4 +35,4 @@ while not done:
     move_list+=change_list #move_listに結合
 print("Final reward:", reward)
 
-renderer.render(move_list, interval=2000)
+renderer.render(move_list, interval=1000)

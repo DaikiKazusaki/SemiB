@@ -1,7 +1,7 @@
 from Opponent import Opponent
 import numpy as np
 
-class RandomOpponent(Opponent):
+class RandomOpponent(Opponent.__class__):
     def __init__(self, env):
         self.env = env
     def opponent_move(self, board):

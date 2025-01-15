@@ -12,8 +12,7 @@ class Environment(gym.Env):
 
     # クラスのインスタンス化時に呼ばれるメソッド(=コンストラクタ)
     # 盤面の設定や黒が先手などの設定を行う
-    def __init__(self, opponent = RandomOpponent, render_mode=None):
-        print("Environment initialized")
+    def __init__(self, opponent = None, render_mode=None, is_print_log = True, is_output_file = False):
         super().__init__()
         self.board_size = 4
         # 4 x 4 x 4 のマス，各マスは {空=0, 黒=1, 白=-1} とする
@@ -26,6 +25,9 @@ class Environment(gym.Env):
         self.current_player = 1  # 黒=1, 白=-1
         self.opponent = opponent
         self.render_mode = render_mode
+        self.is_print_log = is_print_log
+        self.is_output_file = is_output_file
+        self.print_log("Environment initialized")
 
     # 環境の初期化
     ## 4 x 4 x 4 のマスを全て0にし，手番を黒にする
@@ -49,14 +51,23 @@ class Environment(gym.Env):
         # 行動が有効か判定
         if not self.is_valid_move(i, j, k, self.current_player):
             # 無効手を打った場合は大きな負の報酬を与え、エピソード終了とするなどの処理を行う
-            # ここでは簡易的に、報酬=-1でゲーム終了
-            reward = -1
+            reward = -5
             terminated = True
             info = {"illegal_move": True}
+            self.print_log(f'({i}, {j}, {k}) is invalid move.')
             return self.board.copy(), reward, terminated, False, info
         
         # 石を置く
         self.place_disc(i, j, k, self.current_player)
+
+        terminated = self.is_game_over()
+        if terminated:
+            if self.is_output_file:
+                with open('list.txt', 'w') as f:
+                    for item in list:
+                        f.write("%s\n" % item)
+            reward = self.compute_final_reward()
+            return self.board.copy(), reward, terminated, False, {}
 
         # 次のプレイヤーへ
         self.current_player *= -1
@@ -67,9 +78,10 @@ class Environment(gym.Env):
         # 終了判定
         terminated = self.is_game_over()
         if terminated:
-            with open('list.txt', 'w') as f:
-                for item in list:
-                    f.write("%s\n" % item)
+            if self.is_output_file:
+                with open('list.txt', 'w') as f:
+                    for item in list:
+                        f.write("%s\n" % item)
             reward = self.compute_final_reward()
         else:
             reward = 0.0
@@ -97,15 +109,32 @@ class Environment(gym.Env):
     # 立体四目並べでは石を反転する必要がないため，石を置くだけでよい
     ## i: x座標, j: y座標, k: z座標, player: 石の色(黒=1, 白=-1)
     def place_disc(self, i, j, k, player):
-        print(f"Player {player} placed a disc at ({i}, {j}, {k})")
+        self.print_log(f"Player {player} placed a disc at ({i}, {j}, {k})")
         list.append([i, j, k])
         self.board[i, j, k] = player      
 
     # 石を置いた後の(AIの)相手の処理
     def opponent_move(self):
-        # シンプルに相手はランダムで有効手を打つ
-        x, y, z = self.opponent.opponent_move(self.board)
-        self.place_disc(x, y, z)    # TODO: 不正値(-1, -1, -1)が返ってきた時とかの処理を実装
+        x, y, z = (-1, -1, -1)
+        if self.opponent is not None:
+            self.print_log('敵')
+            x, y, z = self.opponent.opponent_move(self.board)
+        if not self.is_valid_move(x, y, z, self.current_player):
+            # ランダムに選ぶ
+            self.print_log('敵ランダム')
+            valid_moves = []
+            for pos in range(self.board_size * self.board_size * self.board_size):
+                i = pos % self.board_size
+                j = (pos // self.board_size) % self.board_size
+                k = pos // (self.board_size * self.board_size)
+                if self.is_valid_move(i, j, k, self.current_player):
+                    valid_moves.append(pos)
+            if valid_moves:
+                chosen = np.random.choice(valid_moves)
+                x = chosen % self.board_size
+                y = (chosen // self.board_size) % self.board_size
+                z = chosen // (self.board_size * self.board_size)
+        self.place_disc(x, y, z, self.current_player)    # TODO: 不正値(-1, -1, -1)が返ってきた時とかの処理を実装
         self.current_player *= -1
 
     # ゲームの終了判定
@@ -161,6 +190,13 @@ class Environment(gym.Env):
         if np.all(self.board != 0):
             return 0
         return float(self.current_player)
+    
+    def print_log(self, log):
+        if self.is_print_log:
+            print(log)
+    
+    def set_opponent(self, opponent):
+        self.opponent = opponent
 
     # ボードの表示
     def render(self):
