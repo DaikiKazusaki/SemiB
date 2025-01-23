@@ -24,6 +24,7 @@ model.learn(total_timesteps=10)  # 任意
 obs, info = env.reset()
 done = False
 tmp=obs.copy()
+# env.set_opponent(ModelOpponent(model2, Environment()))
 move_list=[] #ここに履歴を保存
 while not done:
     action, _ = model.predict(obs)
@@ -41,4 +42,4 @@ while not done:
     move_list+=change_list #move_listに結合
 print("Final reward:", reward)
 
-renderer.render(move_list, interval=2000)
+renderer.render(move_list, interval=1000)

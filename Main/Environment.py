@@ -1,5 +1,6 @@
 import gymnasium as gym
 from gymnasium import spaces
+from Opponent import Opponent, RandomOpponent
 import numpy as np
 
 list = []
@@ -23,6 +24,7 @@ class Environment(gym.Env):
         # 内部状態
         self.board = None
         self.current_player = 1  # 黒=1, 白=-1
+        self.opponent = opponent
         self.render_mode = render_mode
         self.opponent = opponent  # Opponentインスタンスを保持
 
@@ -48,14 +50,23 @@ class Environment(gym.Env):
         # 行動が有効か判定
         if not self.is_valid_move(i, j, k, self.current_player):
             # 無効手を打った場合は大きな負の報酬を与え、エピソード終了とするなどの処理を行う
-            # ここでは簡易的に、報酬=-1でゲーム終了
-            reward = -1
+            reward = -5
             terminated = True
             info = {"illegal_move": True}
+            self.print_log(f'({i}, {j}, {k}) is invalid move.')
             return self.board.copy(), reward, terminated, False, info
         
         # 石を置く
         self.place_disc(i, j, k, self.current_player)
+
+        terminated = self.is_game_over()
+        if terminated:
+            if self.is_output_file:
+                with open('list.txt', 'w') as f:
+                    for item in list:
+                        f.write("%s\n" % item)
+            reward = self.compute_final_reward()
+            return self.board.copy(), reward, terminated, False, {}
 
         # 次のプレイヤーへ
         self.current_player *= -1
@@ -66,9 +77,10 @@ class Environment(gym.Env):
         # 終了判定
         terminated = self.is_game_over()
         if terminated:
-            with open('list.txt', 'w') as f:
-                for item in list:
-                    f.write("%s\n" % item)
+            if self.is_output_file:
+                with open('list.txt', 'w') as f:
+                    for item in list:
+                        f.write("%s\n" % item)
             reward = self.compute_final_reward()
         else:
             reward = 0.0
@@ -96,7 +108,7 @@ class Environment(gym.Env):
     # 立体四目並べでは石を反転する必要がないため，石を置くだけでよい
     ## i: x座標, j: y座標, k: z座標, player: 石の色(黒=1, 白=-1)
     def place_disc(self, i, j, k, player):
-        print(f"Player {player} placed a disc at ({i}, {j}, {k})")
+        self.print_log(f"Player {player} placed a disc at ({i}, {j}, {k})")
         list.append([i, j, k])
         self.board[i, j, k] = player      
 
@@ -162,6 +174,13 @@ class Environment(gym.Env):
         if np.all(self.board != 0):
             return 0
         return float(self.current_player)
+    
+    def print_log(self, log):
+        if self.is_print_log:
+            print(log)
+    
+    def set_opponent(self, opponent):
+        self.opponent = opponent
 
     # ボードの表示
     def render(self):
