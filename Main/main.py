@@ -3,9 +3,7 @@ from Environment import Environment
 from board_renderer import renderer
 from stable_baselines3 import PPO
 import gymnasium as gym
-from Opponent import Opponent
-from RandomOpponent import RandomOpponent
-from StrongOpponent import StrongOpponent
+from Opponent.StrongOpponent import StrongOpponent
 
 
 # ランダムな相手プレイヤーのインスタンスを作成
@@ -18,7 +16,7 @@ opponent_instance = StrongOpponent()
 env = Environment(opponent=opponent_instance)
 
 model = PPO("MlpPolicy", env, verbose=1)
-model.learn(total_timesteps=10)  # 任意
+model.learn(total_timesteps=300000)  # 任意
 
 # 学習後にテスト
 obs, info = env.reset()

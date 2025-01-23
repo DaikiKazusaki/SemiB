@@ -1,6 +1,6 @@
-from Opponent import Opponent
+from Opponent import OpponentBase
 
-class ModelOpponent(Opponent.__class__):
+class ModelOpponent(OpponentBase):
     def __init__(self, model, env):
         self.env = env
         self.model = model      # モデルを受け取る

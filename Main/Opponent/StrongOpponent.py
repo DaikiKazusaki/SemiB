@@ -1,7 +1,7 @@
 import numpy as np
-from Opponent import Opponent
+from .Opponent import OpponentBase
 
-class StrongOpponent(Opponent):
+class StrongOpponent(OpponentBase):
     def opponent_move(self, board):
         board_size = board.shape[0]
         directions = [

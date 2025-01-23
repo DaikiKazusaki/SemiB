@@ -1,6 +1,5 @@
 import gymnasium as gym
 from gymnasium import spaces
-from Opponent import Opponent, RandomOpponent
 import numpy as np
 
 list = []
@@ -12,7 +11,7 @@ class Environment(gym.Env):
 
     # クラスのインスタンス化時に呼ばれるメソッド(=コンストラクタ)
     # 盤面の設定や黒が先手などの設定を行う
-    def __init__(self, render_mode=None, opponent=None):
+    def __init__(self, render_mode=None, opponent=None, is_print_log=False, is_output_file=False):
         print("Environment initialized")
         super().__init__()
         self.board_size = 4
@@ -25,6 +24,8 @@ class Environment(gym.Env):
         self.board = None
         self.current_player = 1  # 黒=1, 白=-1
         self.opponent = opponent
+        self.is_print_log = is_print_log
+        self.is_output_file = is_output_file
         self.render_mode = render_mode
         self.opponent = opponent  # Opponentインスタンスを保持
 

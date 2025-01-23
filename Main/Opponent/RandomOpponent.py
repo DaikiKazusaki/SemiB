@@ -1,23 +1,22 @@
-from Opponent import Opponent
 import numpy as np
+from .Opponent import OpponentBase
 
-class RandomOpponent(Opponent.__class__):
-    def __init__(self, env):
-        self.env = env
+
+class RandomOpponent(OpponentBase):
     def opponent_move(self, board):
+        # ボードサイズを取得
+        board_size = board.shape[0]
         valid_moves = []
-        for pos in range(self.env.board_size * self.env.board_size * self.env.board_size):
-            i = pos // (self.env.board_size * self.env.board_size)
-            j = (pos // self.env.board_size) % self.env.board_size
-            k = pos % self.env.board_size
-            if self.env.is_valid_move(i, j, k, self.env.current_player):
-                valid_moves.append(pos)
-                
+
+        # 有効な手を収集
+        for x in range(board_size):
+            for y in range(board_size):
+                for z in range(board_size):
+                    if board[x, y, z] == 0:  # 空いているマスを探す
+                        if z == 0 or board[x, y, z - 1] != 0:  # 真下に駒があるか確認
+                            valid_moves.append((x, y, z))
+
+        # ランダムに有効な手を選択
         if valid_moves:
-            chosen = np.random.choice(valid_moves)
-            i = chosen // (self.env.board_size * self.env.board_size)
-            j = (chosen  // self.env.board_size) % self.env.board_size
-            k = chosen % self.env.board_size
-            return (i, j, k)
-        else:
-            return (-1, -1, -1)     # 置けるところがない場合は不正値を返す
+            return valid_moves[np.random.choice(len(valid_moves))]
+        return None  # 有効な手がない場合
