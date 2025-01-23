@@ -17,8 +17,8 @@ class Environment(gym.Env):
         self.board_size = 4
         # 4 x 4 x 4 のマス，各マスは {空=0, 黒=1, 白=-1} とする
         self.observation_space = spaces.Box(low=-1, high=1, shape=(self.board_size, self.board_size, self.board_size), dtype=int)
-        # 行動空間: 64マスのいずれかに打つことを選択(0~63)
-        self.action_space = spaces.Discrete(self.board_size * self.board_size * self.board_size)
+        # 行動空間: 16マスのいずれかに打つことを選択(0~15)
+        self.action_space = spaces.Discrete(self.board_size * self.board_size)
 
         # 内部状態
         self.board = None
@@ -43,18 +43,26 @@ class Environment(gym.Env):
     # 行動の実行
     ## どこに置いたかの座標を戻り値にする
     def step(self, action):
-        # actionは0~63の整数, これをボード上の(i,j,k)にマッピング
+        # actionは0~15の整数, これをボード上の(i,j,k)にマッピング
+        # i = action % self.board_size
+        # j = (action // self.board_size) % self.board_size
+        # k = action // (self.board_size * self.board_size)
         i = action % self.board_size
-        j = (action // self.board_size) % self.board_size
-        k = action // (self.board_size * self.board_size)
+        j = action // self.board_size
+        k = 0
+        while k < self.board_size:
+            if self.is_valid_move(i, j, k, self.current_player):
+                break
+            k += 1
         
         # 行動が有効か判定
         if not self.is_valid_move(i, j, k, self.current_player):
             # 無効手を打った場合は大きな負の報酬を与え、エピソード終了とするなどの処理を行う
-            reward = -5
+            reward = -10.0
             terminated = True
             info = {"illegal_move": True}
             self.print_log(f'({i}, {j}, {k}) is invalid move.')
+            print('illegal!')
             return self.board.copy(), reward, terminated, False, info
         
         # 石を置く
@@ -67,6 +75,8 @@ class Environment(gym.Env):
                     for item in list:
                         f.write("%s\n" % item)
             reward = self.compute_final_reward()
+            if reward > 0:
+            print('○ ○ ○ ○ ○ ○ ○ ○ ○ ○ ')
             return self.board.copy(), reward, terminated, False, {}
 
         # 次のプレイヤーへ
@@ -83,10 +93,17 @@ class Environment(gym.Env):
                     for item in list:
                         f.write("%s\n" % item)
             reward = self.compute_final_reward()
+            if reward > 0:
+                print('○ ○ ○ ○ ○ ○ ○ ○ ○ ○ ')
+            elif reward < 0:
+                print('× × × × ×')
+            else:
+                print('△ △ △ △ △ △ △ △ △ △ △ △ △ △ △ ')
         else:
             reward = 0.0
 
         info = {}
+        self.current_player *= -1
         return self.board.copy(), reward, terminated, False, info
 
     # 指定された位置に石を置けるかどうか
@@ -120,7 +137,20 @@ class Environment(gym.Env):
             if move:
                 x, y, z = move
                 self.place_disc(x, y, z, self.current_player)
-                self.current_player *= -1
+            else:
+                valid_moves = []
+
+                # 有効な手を収集
+                for x in range(self.board_size):
+                    for y in range(self.board_size):
+                        for z in range(self.board_size):
+                            if self.board[x, y, z] == 0:  # 空いているマスを探す
+                                if z == 0 or self.board[x, y, z - 1] != 0:  # 真下に駒があるか確認
+                                    valid_moves.append((x, y, z))
+                
+                x, y, z = valid_moves[np.random.choice(len(valid_moves))]
+                self.place_disc(x, y, z, self.current_player)
+
 
     # ゲームの終了判定
     ## return: True=ゲーム終了, False=ゲーム継続

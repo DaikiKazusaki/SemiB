@@ -4,6 +4,8 @@ from board_renderer import renderer
 from stable_baselines3 import PPO
 import gymnasium as gym
 from Opponent.StrongOpponent import StrongOpponent
+from Opponent.RandomOpponent import RandomOpponent
+from Opponent.ModelOpponent import ModelOpponent
 
 
 # ランダムな相手プレイヤーのインスタンスを作成
@@ -11,22 +13,30 @@ from Opponent.StrongOpponent import StrongOpponent
 
 # 強い相手プレイヤーのインスタンスを作成
 opponent_instance = StrongOpponent()
+random_opponent_instance = RandomOpponent()
 
 # カスタム環境を登録するか、直接インスタンス化
-env = Environment(opponent=opponent_instance)
+env = Environment(opponent=random_opponent_instance)
 
 model = PPO("MlpPolicy", env, verbose=1)
-model.learn(total_timesteps=300000)  # 任意
+# model.learn(total_timesteps=100000)  # 任意
+# env.set_opponent(opponent_instance)
+# model.learn(total_timesteps=100000)
+model = PPO.load("model_files/20250123_220706/20250123_220706_3_3d-tic-tac-toe.zip", env=env)
+model2 = PPO.load("model_files/20250123_220706/20250123_220706_3_3d-tic-tac-toe.zip", env=env)
 
 # 学習後にテスト
 obs, info = env.reset()
 done = False
 tmp=obs.copy()
-# env.set_opponent(ModelOpponent(model2, Environment()))
+# env.set_opponent(ModelOpponent(model2))
+env.set_opponent(StrongOpponent())
 move_list=[] #ここに履歴を保存
 while not done:
     action, _ = model.predict(obs)
+    print(obs)
     obs, reward, done, truncated, info = env.step(action)
+    print(obs)
     changed_indices=np.where(tmp != obs) #1step前との差分を取得
     change_list=[]
     for idx in zip(*changed_indices):#差分すべてをチェック
