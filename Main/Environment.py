@@ -12,7 +12,8 @@ class Environment(gym.Env):
 
     # クラスのインスタンス化時に呼ばれるメソッド(=コンストラクタ)
     # 盤面の設定や黒が先手などの設定を行う
-    def __init__(self, opponent = None, render_mode=None, is_print_log = True, is_output_file = False):
+    def __init__(self, render_mode=None, opponent=None):
+        print("Environment initialized")
         super().__init__()
         self.board_size = 4
         # 4 x 4 x 4 のマス，各マスは {空=0, 黒=1, 白=-1} とする
@@ -25,9 +26,7 @@ class Environment(gym.Env):
         self.current_player = 1  # 黒=1, 白=-1
         self.opponent = opponent
         self.render_mode = render_mode
-        self.is_print_log = is_print_log
-        self.is_output_file = is_output_file
-        self.print_log("Environment initialized")
+        self.opponent = opponent  # Opponentインスタンスを保持
 
     # 環境の初期化
     ## 4 x 4 x 4 のマスを全て0にし，手番を黒にする
@@ -115,27 +114,12 @@ class Environment(gym.Env):
 
     # 石を置いた後の(AIの)相手の処理
     def opponent_move(self):
-        x, y, z = (-1, -1, -1)
-        if self.opponent is not None:
-            self.print_log('敵')
-            x, y, z = self.opponent.opponent_move(self.board)
-        if not self.is_valid_move(x, y, z, self.current_player):
-            # ランダムに選ぶ
-            self.print_log('敵ランダム')
-            valid_moves = []
-            for pos in range(self.board_size * self.board_size * self.board_size):
-                i = pos % self.board_size
-                j = (pos // self.board_size) % self.board_size
-                k = pos // (self.board_size * self.board_size)
-                if self.is_valid_move(i, j, k, self.current_player):
-                    valid_moves.append(pos)
-            if valid_moves:
-                chosen = np.random.choice(valid_moves)
-                x = chosen % self.board_size
-                y = (chosen // self.board_size) % self.board_size
-                z = chosen // (self.board_size * self.board_size)
-        self.place_disc(x, y, z, self.current_player)    # TODO: 不正値(-1, -1, -1)が返ってきた時とかの処理を実装
-        self.current_player *= -1
+        if self.opponent:
+            move = self.opponent.opponent_move(self.board)
+            if move:
+                x, y, z = move
+                self.place_disc(x, y, z, self.current_player)
+                self.current_player *= -1
 
     # ゲームの終了判定
     ## return: True=ゲーム終了, False=ゲーム継続

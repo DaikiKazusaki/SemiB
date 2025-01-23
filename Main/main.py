@@ -3,15 +3,22 @@ from Environment import Environment
 from board_renderer import renderer
 from stable_baselines3 import PPO
 import gymnasium as gym
-from Opponent.ModelOpponent import ModelOpponent
+from Opponent import Opponent
+from RandomOpponent import RandomOpponent
+from StrongOpponent import StrongOpponent
+
+
+# ランダムな相手プレイヤーのインスタンスを作成
+# opponent_instance = RandomOpponent()
+
+# 強い相手プレイヤーのインスタンスを作成
+opponent_instance = StrongOpponent()
 
 # カスタム環境を登録するか、直接インスタンス化
-env = Environment(is_print_log=True, is_output_file=True)
+env = Environment(opponent=opponent_instance)
 
-# model = PPO("MlpPolicy", env, verbose=1)
-# model.learn(total_timesteps=10000)  # 任意
-model = PPO.load("model_files/20250115_123404/20250115_123404_final_3d-tic-tac-toe.zip", env=env)
-model2 = PPO.load("model_files/20250115_123404/20250115_123404_final_3d-tic-tac-toe.zip", env=env)
+model = PPO("MlpPolicy", env, verbose=1)
+model.learn(total_timesteps=10)  # 任意
 
 # 学習後にテスト
 obs, info = env.reset()
