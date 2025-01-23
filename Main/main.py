@@ -3,12 +3,22 @@ from Environment import Environment
 from board_renderer import renderer
 from stable_baselines3 import PPO
 import gymnasium as gym
+from Opponent import Opponent
+from RandomOpponent import RandomOpponent
+from StrongOpponent import StrongOpponent
+
+
+# ランダムな相手プレイヤーのインスタンスを作成
+# opponent_instance = RandomOpponent()
+
+# 強い相手プレイヤーのインスタンスを作成
+opponent_instance = StrongOpponent()
 
 # カスタム環境を登録するか、直接インスタンス化
-env = Environment()
+env = Environment(opponent=opponent_instance)
 
 model = PPO("MlpPolicy", env, verbose=1)
-model.learn(total_timesteps=10000)  # 任意
+model.learn(total_timesteps=10)  # 任意
 
 # 学習後にテスト
 obs, info = env.reset()

@@ -11,7 +11,7 @@ class Environment(gym.Env):
 
     # クラスのインスタンス化時に呼ばれるメソッド(=コンストラクタ)
     # 盤面の設定や黒が先手などの設定を行う
-    def __init__(self, render_mode=None):
+    def __init__(self, render_mode=None, opponent=None):
         print("Environment initialized")
         super().__init__()
         self.board_size = 4
@@ -24,6 +24,7 @@ class Environment(gym.Env):
         self.board = None
         self.current_player = 1  # 黒=1, 白=-1
         self.render_mode = render_mode
+        self.opponent = opponent  # Opponentインスタンスを保持
 
     # 環境の初期化
     ## 4 x 4 x 4 のマスを全て0にし，手番を黒にする
@@ -101,23 +102,12 @@ class Environment(gym.Env):
 
     # 石を置いた後の(AIの)相手の処理
     def opponent_move(self):
-        # シンプルに相手はランダムで有効手を打つ
-        valid_moves = []
-        for pos in range(self.board_size * self.board_size * self.board_size):
-            i = pos // (self.board_size * self.board_size)
-            j = (pos // self.board_size) % self.board_size
-            k = pos % self.board_size
-            if self.is_valid_move(i, j, k, self.current_player):
-                valid_moves.append(pos)
-                
-        if valid_moves:
-            chosen = np.random.choice(valid_moves)
-            i = chosen // (self.board_size * self.board_size)
-            j = (chosen  // self.board_size) % self.board_size
-            k = chosen % self.board_size
-            self.place_disc(i, j, k, self.current_player)
-        
-        self.current_player *= -1
+        if self.opponent:
+            move = self.opponent.opponent_move(self.board)
+            if move:
+                x, y, z = move
+                self.place_disc(x, y, z, self.current_player)
+                self.current_player *= -1
 
     # ゲームの終了判定
     ## return: True=ゲーム終了, False=ゲーム継続
