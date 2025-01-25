@@ -5,6 +5,7 @@ from stable_baselines3 import PPO
 import gymnasium as gym
 from Opponent.StrongOpponent import StrongOpponent
 
+is_able_to_put = [0] * 16
 
 # ランダムな相手プレイヤーのインスタンスを作成
 # opponent_instance = RandomOpponent()
@@ -21,14 +22,14 @@ model.learn(total_timesteps=300000)  # 任意
 # 学習後にテスト
 obs, info = env.reset()
 done = False
-tmp=obs.copy()
+tmp = obs.copy()
 # env.set_opponent(ModelOpponent(model2, Environment()))
 move_list=[] #ここに履歴を保存
 while not done:
     action, _ = model.predict(obs)
     obs, reward, done, truncated, info = env.step(action)
-    changed_indices=np.where(tmp != obs) #1step前との差分を取得
-    change_list=[]
+    changed_indices = np.where(tmp != obs) #1step前との差分を取得
+    change_list = []
     for idx in zip(*changed_indices):#差分すべてをチェック
         x, y, z = idx #x,y,z座標を取得
         value = obs[idx] #ぞの座標におかれたのがどちらの石かを取得
@@ -36,8 +37,16 @@ while not done:
             change_list.insert(0, [x, y]) 
         elif value == -1:#白が後手なので後に格納
             change_list.append([x, y]) 
-        tmp[idx]=value #ひとつ前の盤面を更新
-    move_list+=change_list #move_listに結合
+        tmp[idx] = value #ひとつ前の盤面を更新
+    move_list += change_list #move_listに結合
 print("Final reward:", reward)
 
 renderer.render(move_list, interval=1000)
+
+def is_able_to_put(action):
+    is_able_to_put[action] += 1
+    
+    if is_able_to_put[action] > 3:
+        return False
+    
+    return True
