@@ -27,6 +27,11 @@ tmp = obs.copy()
 move_list=[] #ここに履歴を保存
 while not done:
     action, _ = model.predict(obs)
+
+    # actionが置ける場所でない場合はランダムに選び直す
+    while not is_able_to_put(action):
+        action, _ = model.predict(obs)
+    
     obs, reward, done, truncated, info = env.step(action)
     changed_indices = np.where(tmp != obs) #1step前との差分を取得
     change_list = []
@@ -43,9 +48,10 @@ print("Final reward:", reward)
 
 renderer.render(move_list, interval=1000)
 
+# 3回以上同じ手を打たないようにする
 def is_able_to_put(action):
     is_able_to_put[action] += 1
-    
+
     if is_able_to_put[action] > 3:
         return False
     
