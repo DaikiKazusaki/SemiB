@@ -53,12 +53,3 @@ while not done:
 print("Final reward:", reward)
 
 renderer.render(move_list, interval=1000)
-
-# 3回以上同じ手を打たないようにする
-def is_able_to_put(action):
-    is_able_to_put[action] += 1
-
-    if is_able_to_put[action] > 3:
-        return False
-    
-    return True
