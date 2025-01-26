@@ -32,7 +32,7 @@ while not done:
     valid_action = False
     while not valid_action:
         action, _ = model.predict(obs)  # モデルからアクションを予測
-        if action_counts[action] < 3:   # アクションが3回未満なら有効
+        if action_counts[action] <= 4:   # アクションが4回以下なら有効
             valid_action = True
             action_counts[action] += 1  # アクションのカウントを更新
         else:
