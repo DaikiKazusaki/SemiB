@@ -3,6 +3,7 @@ from Environment import Environment, Black
 from board_renderer import renderer
 from stable_baselines3 import PPO
 import gymnasium as gym
+import os
 from Opponent.StrongOpponent import StrongOpponent
 from Opponent.RandomOpponent import RandomOpponent
 from Opponent.ModelOpponent import ModelOpponent
@@ -20,7 +21,7 @@ opponent2_instance = StrongOpponent2()
 # カスタム環境を登録するか、直接インスタンス化
 env = Environment(opponent=opponent_instance)
 
-model = PPO.load("model_files/tmp/1.zip", env=env)
+model = PPO.load(os.path.join("model_files", "tmp", "1.zip"), env=env)
 
 # 学習後にテスト
 obs, info = env.reset()
