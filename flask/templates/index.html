@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8"/>
+        <title>立体4目並べ 対戦</title>
+        <script type="importmap">
+            {
+                "imports": {
+                    "three": "https://cdn.jsdelivr.net/npm/three@0.171.0/build/three.module.js",
+                    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.171.0/examples/jsm/"
+                }
+            }
+        </script>
+        <script type="module" src="{{ url_for('static', filename='js/index.js') }}"></script>
+    </head>
+    <body>
+        <h1>立体4目並べ 対戦</h1>
+        <div class="main">
+            <button type="button" id="first-move-button">先攻</button>
+            <button type="button" id="second-move-button">後攻</button>
+        </div>
+    </body>
+</html>

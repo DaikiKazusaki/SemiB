@@ -19,11 +19,13 @@ const App = {
     board: [],        // 現在の盤面 (4×4×4形式)
     clickLog: [],     // クリックした棒の記録
     turnCount: 0,     // ターン数（奇数・偶数を判定）
+    isFirst: true,    // 先手か後手か
     isGameOver: false,// ゲームが終わったか
 };
 
 App.isMyTurn = function() {
-    return App.turnCount % 2 == 0;
+    if (App.isFirst) { return App.turnCount % 2 == 0; }
+    else { return App.turnCount % 2 == 1; }
 }
 
 App.init = function() {
@@ -191,7 +193,7 @@ App.init = function() {
                 App.turnCount++;
 
                 // ここから敵の動き
-                fetch('/move', {
+                fetch('/board/move', {
                     method: "POST",
                     headers: {
                         'Content-Type': 'application/json'
@@ -299,6 +301,69 @@ App.init = function() {
     // イベントリスナーの登録
     canvas.addEventListener('mousemove', onMouseMove);
     canvas.addEventListener('click', onMouseClick);
+
+    // 先攻か後攻か取得して、後攻の場合は相手の最初の手を取得、表示
+    fetch('/board',{
+        method: "POST",
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(res => res.json())
+    .then(data => {
+        let player_first = data['player_first'];
+        const is_player_first_div = document.getElementById('is-first');
+        const prefix = '順番：';
+        if (!player_first) {
+            App.isFirst = false;
+            const [opponentX, opponentZ, opponentY] = data['opponent']; // 表示はyとzが逆になることに注意
+            const opponentRod = App.rods.find(function (rod) {
+                const { x, z } = rod.userData;
+                return x == opponentX && z == opponentZ;
+            });
+            const sphereGeometry = new THREE.SphereGeometry(sphereRadius, 16, 16);
+            const material = App.isMyTurn() ? blackMaterial : whiteMaterial;
+            const sphere = new THREE.Mesh(sphereGeometry, material);
+            sphere.position.set(
+                opponentRod.position.x,
+                -1.5 + opponentY,    // 縦に積む
+                opponentRod.position.z
+            );
+            App.scene.add(sphere);
+
+            // 盤面情報を更新
+            updateBoardWithLog(opponentX, opponentY, opponentZ);
+
+            opponentRod.userData.spheres++;
+            App.turnCount++;
+
+            is_player_first_div.innerHTML = prefix + '後攻';
+        }
+        else {
+            is_player_first_div.innerHTML = prefix + '先攻';
+        }
+    }) 
+
+    const againButton = document.getElementById('again-button');
+    const backButton = document.getElementById('back-button');
+
+    againButton.addEventListener('click', () => {
+        window.location.reload();
+    });
+
+    backButton.addEventListener('click', () => {
+        fetch('/board/back', {
+            method: "GET",
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(res => {
+            if (res.redirected) {
+                window.location.href = res.url;
+            }
+        })
+    });
 };
 
 // 表示の更新
