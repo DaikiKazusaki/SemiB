@@ -4,3 +4,5 @@ Main/board_renderer/result/
 # pythonの仮想環境
 **/venv/
 Main/list.txt
+**/log/
+**/model_files/
