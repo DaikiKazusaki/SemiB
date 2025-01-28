@@ -1,60 +1,97 @@
 import gymnasium as gym
 from gymnasium import spaces
 import numpy as np
+import random
+from enum import Enum
 
-list = []
+# 石を表す
+# 黒 ->  1 (プレイヤーの石の色)
+# 白 -> -1 (敵の石の色)
+# 空 ->  0 (置かれてない)
+White = -1
+Empty = 0
+Black = 1
+class GameResult(Enum):
+    Illegal = -2
+    Lose = -1
+    Draw = 0
+    Win = 1
 
 class Environment(gym.Env):
     # メタデータの定義
     ## Gymnasium環境に関する追加情報を格納するための辞書
     metadata = {"render_modes": ["human"]}
 
+    result_key = "result"                          # リザルトを表すキー
+    moves_key = "moves"                            # 打った手を表すキー
+    first_stone_key = "first_stone"                # 先手を表すキー
+    opponent_illegal_key = "opponent_illegal"      # 敵の無効手の回数を表すキー
+
     # クラスのインスタンス化時に呼ばれるメソッド(=コンストラクタ)
     # 盤面の設定や黒が先手などの設定を行う
-    def __init__(self, render_mode=None, opponent=None, is_print_log=False, is_output_file=False):
-        print("Environment initialized")
+    def __init__(self, render_mode=None, opponent=None):
         super().__init__()
         self.board_size = 4
         # 4 x 4 x 4 のマス，各マスは {空=0, 黒=1, 白=-1} とする
         self.observation_space = spaces.Box(low=-1, high=1, shape=(self.board_size, self.board_size, self.board_size), dtype=int)
-        # 行動空間: 64マスのいずれかに打つことを選択(0~63)
-        self.action_space = spaces.Discrete(self.board_size * self.board_size * self.board_size)
+        # 行動空間: 16マスのいずれかに打つことを選択(0~15)
+        self.action_space = spaces.Discrete(self.board_size * self.board_size)
 
         # 内部状態
         self.board = None
-        self.current_player = 1  # 黒=1, 白=-1
-        self.opponent = opponent
-        self.is_print_log = is_print_log
-        self.is_output_file = is_output_file
-        self.render_mode = render_mode
-        self.opponent = opponent  # Opponentインスタンスを保持
+        self.opponent = opponent                            # 敵を設定
+        self.render_mode = render_mode                      # 表示モード（現在未使用）
+        self.current_player = None                          # プレイヤーに設定
+        self.game_count = 0                                 # 実行した試合回数（学習の際のログ出力用）
+        self.game_details = {}                              # ゲームの詳細
+        self.penalty_illegal = -10.0                        # 無効な手を打った際のペナルティ
+        self.value_lose      =  -1.0                        # 負けた時の報酬
+        self.value_win       =   1.0                        # 勝った時の報酬
+        self.value_draw      =   0.0                        # 引き分けの時の報酬
 
     # 環境の初期化
     ## 4 x 4 x 4 のマスを全て0にし，手番を黒にする
-    def reset(self, seed=None, options=None):
+    ## first_stone: 先手を取る石（Noneでランダムになる）
+    def reset(self, seed=None, first_stone=None, options=None):
         super().reset(seed=seed)
-        # 初期配置
-        self.board = np.zeros((self.board_size, self.board_size, self.board_size), dtype=int)
-        self.current_player = 1
-        observation = self.board.copy()
-        info = {}
+        self.board = np.array([[[Empty] * self.board_size] * self.board_size] * self.board_size)
+        self.game_count += 1                                                            # ゲームカウントを1増やす
+        self.game_details[self.game_count] = {
+            Environment.result_key: None,
+            Environment.first_stone_key: None,
+            Environment.moves_key: [],
+            Environment.opponent_illegal_key: 0
+        }                                                                               # ゲームの詳細を入れる用
+        if not first_stone:                                                             # 先手が指定されていない場合
+            self.current_player = random.choice([Black, White])             # ランダムに先手を決定
+        self.game_details[self.game_count][Environment.first_stone_key] = self.current_player  # 先手を保存
+        if self.current_player == White:                                                # 敵が先手の場合
+            x, y, z = self.opponent_move()                                              # 敵の手を取得
+            self.place_disc(x, y, z, self.current_player)                               # 石を置く
+            self.switch_player()                                                        # プレイヤーを切り替える
+        info = { "first": self.current_player }                                         # 先手の情報は返す
+        observation = self.board.copy()                                                 # 初期の盤面
         return observation, info
     
     # 行動の実行
     ## どこに置いたかの座標を戻り値にする
     def step(self, action):
-        # actionは0~63の整数, これをボード上の(i,j,k)にマッピング
+        # actionは0~15の整数, これをボード上の(i,j,k)にマッピング
         i = action % self.board_size
-        j = (action // self.board_size) % self.board_size
-        k = action // (self.board_size * self.board_size)
+        j = action // self.board_size
+        k = 0
+        while k < self.board_size:
+            if self.is_valid_move(i, j, k, self.current_player):        # 適切なkならこれにする
+                break
+            k += 1
         
         # 行動が有効か判定
-        if not self.is_valid_move(i, j, k, self.current_player):
+        if not self.is_valid_move(i, j, k, self.current_player):        # 無効な手の場合
             # 無効手を打った場合は大きな負の報酬を与え、エピソード終了とするなどの処理を行う
-            reward = -5
-            terminated = True
-            info = {"illegal_move": True}
-            self.print_log(f'({i}, {j}, {k}) is invalid move.')
+            reward = self.penalty_illegal                               # 無効な手を打ったことによるペナルティ
+            terminated = True                                           # 終了
+            info = {"illegal_move": True}                               # 無効な手という情報を加える
+            self.game_details[self.game_count][Environment.result_key] = GameResult.Illegal    # 反則負けとする
             return self.board.copy(), reward, terminated, False, info
         
         # 石を置く
@@ -62,29 +99,26 @@ class Environment(gym.Env):
 
         terminated = self.is_game_over()
         if terminated:
-            if self.is_output_file:
-                with open('list.txt', 'w') as f:
-                    for item in list:
-                        f.write("%s\n" % item)
             reward = self.compute_final_reward()
             return self.board.copy(), reward, terminated, False, {}
 
         # 次のプレイヤーへ
-        self.current_player *= -1
+        self.switch_player()
 
-        # 相手の行動(ここではランダム)
-        self.opponent_move()
+        # 相手の行動
+        i, j, k = self.opponent_move()
+
+        self.place_disc(i, j, k, self.current_player)
 
         # 終了判定
         terminated = self.is_game_over()
         if terminated:
-            if self.is_output_file:
-                with open('list.txt', 'w') as f:
-                    for item in list:
-                        f.write("%s\n" % item)
             reward = self.compute_final_reward()
         else:
-            reward = 0.0
+            reward = 0.0    # 勝敗がついていない時は0を返す
+
+        # プレイヤーを切り替える
+        self.switch_player()
 
         info = {}
         return self.board.copy(), reward, terminated, False, info
@@ -109,18 +143,31 @@ class Environment(gym.Env):
     # 立体四目並べでは石を反転する必要がないため，石を置くだけでよい
     ## i: x座標, j: y座標, k: z座標, player: 石の色(黒=1, 白=-1)
     def place_disc(self, i, j, k, player):
-        self.print_log(f"Player {player} placed a disc at ({i}, {j}, {k})")
-        list.append([i, j, k])
+        self.game_details[self.game_count][Environment.moves_key].append((i, j, k))    # 手を追加
         self.board[i, j, k] = player      
 
     # 石を置いた後の(AIの)相手の処理
     def opponent_move(self):
-        if self.opponent:
-            move = self.opponent.opponent_move(self.board)
+        if self.opponent:                                       # 敵がいる場合
+            move = self.opponent.opponent_move(self.board)      # 次の手を選択させる
             if move:
-                x, y, z = move
-                self.place_disc(x, y, z, self.current_player)
-                self.current_player *= -1
+                return move
+            else:
+                self.game_details[self.game_count][Environment.opponent_illegal_key] += 1  # 無効な手の回数を増やす
+
+        # 以下、ランダムに打つ
+        valid_moves = []
+        # 有効な手を収集
+        for x in range(self.board_size):
+            for y in range(self.board_size):
+                for z in range(self.board_size):
+                    if self.board[x, y, z] == 0:                    # 空いているマスを探す
+                        if z == 0 or self.board[x, y, z - 1] != 0:  # 真下に駒があるか確認
+                            valid_moves.append((x, y, z))           # 適切なマスに加える
+                            break                                   # この(x,y)の組ではもう他は置けない
+        
+        return valid_moves[np.random.choice(len(valid_moves))]      # ランダムに選択する
+
 
     # ゲームの終了判定
     ## return: True=ゲーム終了, False=ゲーム継続
@@ -144,7 +191,7 @@ class Environment(gym.Env):
         def check_line(x, y, z, dx, dy, dz):
             """指定された方向(dx, dy, dz)に4つ並んでいるか確認する"""
             player = self.board[x, y, z]
-            if player == 0:
+            if player == Empty:
                 return False
             for step in range(1, 4):
                 nx, ny, nz = x + step * dx, y + step * dy, z + step * dz
@@ -163,7 +210,7 @@ class Environment(gym.Env):
                             return True  # 勝利条件を満たすラインがあればゲーム終了
 
         # 盤面が全て埋まっている場合もゲーム終了
-        if np.all(self.board != 0):
+        if np.all(self.board != Empty):
             return True
 
         return False
@@ -171,14 +218,29 @@ class Environment(gym.Env):
     # ゲーム終了時に報酬を計算する
     def compute_final_reward(self):
         ##ゲーム終了時最後の手番の人が勝利する
-        ##黒が1白が-1
-        if np.all(self.board != 0):
-            return 0
-        return float(self.current_player)
+        if np.all(self.board != Empty):
+            self.game_details[self.game_count][Environment.result_key] = GameResult.Draw
+            return self.value_draw
+        elif self.current_player == Black:
+            self.game_details[self.game_count][Environment.result_key] = GameResult.Win
+            return self.value_win
+        elif self.current_player == White:
+            self.game_details[self.game_count][Environment.result_key] = GameResult.Lose
+            return self.value_lose
+        else:
+            raise Exception(f'Undefined player: {self.current_player}')
     
-    def print_log(self, log):
-        if self.is_print_log:
-            print(log)
+    def clear_game_details(self):
+        self.game_count = 0
+        self.game_details = {}
+
+    def switch_player(self):
+        if self.current_player == Black:
+            self.current_player = White
+        elif self.current_player == White:
+            self.current_player = Black
+        else:
+            raise Exception(f'Undefined player: {self.current_player}')
     
     def set_opponent(self, opponent):
         self.opponent = opponent

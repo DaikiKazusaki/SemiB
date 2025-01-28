@@ -1,9 +1,12 @@
 import numpy as np
-from Environment import Environment
+from Environment import Environment, Black
 from board_renderer import renderer
 from stable_baselines3 import PPO
 import gymnasium as gym
 from Opponent.StrongOpponent import StrongOpponent
+from Opponent.RandomOpponent import RandomOpponent
+from Opponent.ModelOpponent import ModelOpponent
+from Opponent.StrongOpponent2 import StrongOpponent2
 
 
 # ランダムな相手プレイヤーのインスタンスを作成
@@ -11,18 +14,19 @@ from Opponent.StrongOpponent import StrongOpponent
 
 # 強い相手プレイヤーのインスタンスを作成
 opponent_instance = StrongOpponent()
+random_opponent_instance = RandomOpponent()
+opponent2_instance = StrongOpponent2()
+model_opponent_instance = ModelOpponent(PPO.load("model_files/20250127_055757/0/model2/27.zip", env=Environment()))
 
 # カスタム環境を登録するか、直接インスタンス化
 env = Environment(opponent=opponent_instance)
 
-model = PPO("MlpPolicy", env, verbose=1)
-model.learn(total_timesteps=300000)  # 任意
+model = PPO.load("model_files/tmp/1.zip", env=env)
 
 # 学習後にテスト
 obs, info = env.reset()
 done = False
 tmp=obs.copy()
-# env.set_opponent(ModelOpponent(model2, Environment()))
 move_list=[] #ここに履歴を保存
 while not done:
     action, _ = model.predict(obs)
@@ -39,5 +43,10 @@ while not done:
         tmp[idx]=value #ひとつ前の盤面を更新
     move_list+=change_list #move_listに結合
 print("Final reward:", reward)
+
+game_detail = env.game_details.get(1)
+move_list = [[m[0], m[1]] for m in game_detail[env.moves_key]]
+
+print('先攻' if game_detail[env.first_stone_key] == Black else '後攻')
 
 renderer.render(move_list, interval=1000)
