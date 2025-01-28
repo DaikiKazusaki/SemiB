@@ -6,6 +6,7 @@ import gymnasium as gym
 from Opponent.StrongOpponent import StrongOpponent
 from Opponent.RandomOpponent import RandomOpponent
 from Opponent.ModelOpponent import ModelOpponent
+from Opponent.StrongOpponent2 import StrongOpponent2
 
 
 # ランダムな相手プレイヤーのインスタンスを作成
@@ -14,23 +15,18 @@ from Opponent.ModelOpponent import ModelOpponent
 # 強い相手プレイヤーのインスタンスを作成
 opponent_instance = StrongOpponent()
 random_opponent_instance = RandomOpponent()
+opponent2_instance = StrongOpponent2()
+# model_opponent_instance = ModelOpponent(PPO.load("model_files/20250127_055757/0/model2/27.zip", env=Environment()))
 
 # カスタム環境を登録するか、直接インスタンス化
-env = Environment(opponent=random_opponent_instance)
+env = Environment(opponent=opponent2_instance)
 
-model = PPO("MlpPolicy", env, verbose=1)
-# model.learn(total_timesteps=100000)  # 任意
-# env.set_opponent(opponent_instance)
-# model.learn(total_timesteps=100000)
-model = PPO.load("model_files/20250123_220706/20250123_220706_3_3d-tic-tac-toe.zip", env=env)
-model2 = PPO.load("model_files/20250123_220706/20250123_220706_3_3d-tic-tac-toe.zip", env=env)
+model = PPO.load("model_files/20250127_133422/0/model2/25.zip", env=env)
 
 # 学習後にテスト
 obs, info = env.reset()
 done = False
 tmp=obs.copy()
-# env.set_opponent(ModelOpponent(model2))
-env.set_opponent(StrongOpponent())
 move_list=[] #ここに履歴を保存
 while not done:
     action, _ = model.predict(obs)
@@ -49,5 +45,8 @@ while not done:
         tmp[idx]=value #ひとつ前の盤面を更新
     move_list+=change_list #move_listに結合
 print("Final reward:", reward)
+
+game_detail = env.game_details.get(1)
+move_list = [[m[0], m[1]] for m in game_detail[env.moves_key]]
 
 renderer.render(move_list, interval=1000)

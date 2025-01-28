@@ -1,5 +1,6 @@
 import numpy as np
 from .Opponent import OpponentBase
+from Environment import Black, White, Empty
 
 class StrongOpponent(OpponentBase):
     def opponent_move(self, board):
@@ -48,12 +49,12 @@ class StrongOpponent(OpponentBase):
 
         # 自分が勝てる手を優先
         for x, y, z in valid_moves:
-            if is_winning_move(x, y, z, 1):  # 自分の色が黒（1）として判断
+            if is_winning_move(x, y, z, White):  # 相手の色が白（-1）として判断
                 return x, y, z
 
         # 相手の勝ちを阻止
         for x, y, z in valid_moves:
-            if is_winning_move(x, y, z, -1):  # 相手の色が白（-1）として判断
+            if is_winning_move(x, y, z, Black):  # 自分の色が黒（1）として判断
                 return x, y, z
 
         # ランダムに置く（ここを改良して更に賢い戦略を加えることも可能）
