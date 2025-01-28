@@ -33,7 +33,7 @@ class Environment(gym.Env):
         super().__init__()
         self.board_size = 4
         # 4 x 4 x 4 のマス，各マスは {空=0, 黒=1, 白=-1} とする
-        self.observation_space = spaces.Box(low=-1, high=1, shape=(self.board_size, self.board_size, self.board_size), dtype=int)
+        self.observation_space = spaces.Box(low=-1, high=1, shape=(self.board_size, self.board_size, self.board_size), dtype=np.int64)
         # 行動空間: 16マスのいずれかに打つことを選択(0~15)
         self.action_space = spaces.Discrete(self.board_size * self.board_size)
 
