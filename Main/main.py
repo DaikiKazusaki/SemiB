@@ -16,7 +16,6 @@ from Opponent.StrongOpponent2 import StrongOpponent2
 opponent_instance = StrongOpponent()
 random_opponent_instance = RandomOpponent()
 opponent2_instance = StrongOpponent2()
-model_opponent_instance = ModelOpponent(PPO.load("model_files/20250127_055757/0/model2/27.zip", env=Environment()))
 
 # カスタム環境を登録するか、直接インスタンス化
 env = Environment(opponent=opponent_instance)
